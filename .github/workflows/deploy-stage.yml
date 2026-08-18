@@ -37,8 +37,9 @@ jobs:
             **/images/**
             **/public/images/**
             **/storage/*.key
-            **/storage/app/**
-            **/storage/framework/**
-            **/storage/logs/**
-            **/bootstrap/cache/**
+            **/storage/framework/cache/data/*
+            **/storage/framework/sessions/*
+            **/storage/framework/views/*
+            **/storage/logs/*.log
+            **/bootstrap/cache/*.php
             **/vendor/**
