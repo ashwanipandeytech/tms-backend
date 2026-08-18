@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Deploy to Hostinger Stage
-        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        uses: SamKirkland/FTP-Deploy-Action@4.3.5
         with:
           server: ${{ secrets.FTP_SERVER_STAGE }}
           username: ${{ secrets.FTP_USERNAME_STAGE }}
@@ -23,9 +23,8 @@ jobs:
           port: 21
           protocol: ftp
           local-dir: ./
-          # Server directory to be updated once provided by DevOps team
-          server-dir: /domains/demohandler.in/public_html/crmtravelapi/
-          dangerous-clean-remote: false
+          server-dir: /home/u479097380/domains/demohandler.in/public_html/apisafarsystem/
+          dangerous-clean-slate: false
           exclude: |
             **/.git*/**
             **/.github/**
