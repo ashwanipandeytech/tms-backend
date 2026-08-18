@@ -1,0 +1,43 @@
+name: Deploy Backend Stage
+
+on:
+  push:
+    branches:
+      - stage
+      - develop
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Hostinger Stage
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER_STAGE }}
+          username: ${{ secrets.FTP_USERNAME_STAGE }}
+          password: ${{ secrets.FTP_PASSWORD_STAGE }}
+          port: 21
+          protocol: ftp
+          local-dir: ./
+          server-dir: /domains/demohandler.in/public_html/apisafarsystem/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/.env
+            **/images/**
+            **/public/images/**
+            **/storage/*.key
+            **/storage/app/**
+            **/storage/framework/**
+            **/storage/logs/**
+            **/bootstrap/cache/**
+            **/vendor/**
