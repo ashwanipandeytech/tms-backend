@@ -1,0 +1,41 @@
+name: Deploy Backend Live
+
+on:
+  push:
+    branches:
+      - live
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Hostinger Live
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{ secrets.FTP_SERVER_LIVE }}
+          username: ${{ secrets.FTP_USERNAME_LIVE }}
+          password: ${{ secrets.FTP_PASSWORD_LIVE }}
+          port: 21
+          protocol: ftp
+          local-dir: ./
+          # Server directory to be updated once provided by DevOps team
+          server-dir: /domains/safarmusafir.com/public_html/api/
+          dangerous-clean-remote: false
+          exclude: |
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/.env
+            **/images/**
+            **/public/images/**
+            **/storage/*.key
+            **/storage/app/**
+            **/storage/framework/**
+            **/storage/logs/**
+            **/bootstrap/cache/**
+            **/vendor/**

@@ -1,0 +1,41 @@
+name: Deploy Backend Stage
+
+on:
+  push:
+    branches:
+      - stage
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Hostinger Stage
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{ secrets.FTP_SERVER_STAGE }}
+          username: ${{ secrets.FTP_USERNAME_STAGE }}
+          password: ${{ secrets.FTP_PASSWORD_STAGE }}
+          port: 21
+          protocol: ftp
+          local-dir: ./
+          # Server directory to be updated once provided by DevOps team
+          server-dir: /domains/demohandler.in/public_html/crmtravelapi/
+          dangerous-clean-remote: false
+          exclude: |
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/.env
+            **/images/**
+            **/public/images/**
+            **/storage/*.key
+            **/storage/app/**
+            **/storage/framework/**
+            **/storage/logs/**
+            **/bootstrap/cache/**
+            **/vendor/**

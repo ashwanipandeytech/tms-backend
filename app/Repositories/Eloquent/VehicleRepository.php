@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Repositories\Eloquent;
+
+use App\Models\Vehicle;
+use App\Repositories\Contracts\VehicleRepositoryInterface;
+
+class VehicleRepository extends BaseRepository implements VehicleRepositoryInterface
+{
+    public function __construct(Vehicle $model)
+    {
+        parent::__construct($model);
+    }
+}
