@@ -27,7 +27,7 @@ jobs:
           protocol: ftp
           security: loose
           local-dir: ./
-          server-dir: /domains/demohandler.in/public_html/safarsystem/
+          server-dir: /domains/demohandler.in/public_html/apisafarsystem/
           dangerous-clean-slate: false
           exclude: |
             **/.git*/**
