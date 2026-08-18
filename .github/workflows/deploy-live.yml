@@ -20,9 +20,9 @@ jobs:
       - name: Deploy to Hostinger Live
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_SERVER_LIVE }}
-          username: ${{ secrets.FTP_USERNAME_LIVE }}
-          password: ${{ secrets.FTP_PASSWORD_LIVE }}
+          server: 145.79.211.128
+          username: u479097380
+          password: DemoHandler_1
           port: 21
           protocol: ftp
           local-dir: ./
