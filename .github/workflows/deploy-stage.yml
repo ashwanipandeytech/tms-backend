@@ -21,13 +21,13 @@ jobs:
       - name: Deploy to Hostinger Stage
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_SERVER_STAGE }}
-          username: ${{ secrets.FTP_USERNAME_STAGE }}
-          password: ${{ secrets.FTP_PASSWORD_STAGE }}
+          server: 145.79.211.128
+          username: u479097380
+          password: Demohandler_1
           port: 21
           protocol: ftp
           local-dir: ./
-          server-dir: /home/u479097380/domains/demohandler.in/public_html/apisafarsystem/
+          server-dir: /domains/demohandler.in/public_html/apisafarsystem/
           dangerous-clean-slate: false
           exclude: |
             **/.git*/**
