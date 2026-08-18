@@ -20,11 +20,12 @@ jobs:
       - name: Deploy to Hostinger Live
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: 145.79.211.128
+          server: ftp.demohandler.in
           username: u479097380
           password: DemoHandler_1
           port: 21
           protocol: ftp
+          security: loose
           local-dir: ./
           server-dir: /domains/demohandler.in/public_html/safarsystem/
           dangerous-clean-slate: false
