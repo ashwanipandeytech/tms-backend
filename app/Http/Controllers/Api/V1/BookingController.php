@@ -22,10 +22,18 @@ class BookingController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->only(['search', 'status']);
+        $user = $request->user();
+
+        // RBAC Scoping for Operations Team
+        if ($user && $user->role && str_contains(strtolower($user->role->name), 'operation')) {
+            $filters['operations_id'] = $user->id;
+        }
+
         $paginator = $this->service->getPaginated(
             perPage: (int) $request->input('per_page', 15),
-            relations: ['customer', 'package'],
-            filters: $request->only(['search', 'status'])
+            relations: ['customer', 'package', 'assignedOperations'],
+            filters: $filters
         );
 
         return $this->paginatedResponse($paginator, 'Bookings retrieved successfully', BookingResource::class);
@@ -37,16 +45,39 @@ class BookingController extends BaseApiController
         return $this->createdResponse(new BookingResource($booking), 'Booking created successfully');
     }
 
-    public function show(int|string $id): JsonResponse
+    public function show(Request $request, int|string $id): JsonResponse
     {
-        $booking = $this->service->getById($id, ['customer', 'package', 'payments', 'invoice']);
+        $booking = $this->service->getById($id, ['customer', 'package', 'payments', 'invoice', 'assignedOperations']);
+        $user = $request->user();
+
+        if ($user && $user->role && str_contains(strtolower($user->role->name), 'operation') && (int) $booking->operations_id !== (int) $user->id) {
+            return $this->errorResponse('Access denied to unassigned booking', 403, 'FORBIDDEN');
+        }
+
         return $this->successResponse(new BookingResource($booking), 'Booking details retrieved');
     }
 
     public function update(BookingRequest $request, int|string $id): JsonResponse
     {
+        $user = $request->user();
+        $bookingModel = $this->service->getById($id);
+
+        if ($user && $user->role && str_contains(strtolower($user->role->name), 'operation') && (int) $bookingModel->operations_id !== (int) $user->id) {
+            return $this->errorResponse('Access denied to modify unassigned booking', 403, 'FORBIDDEN');
+        }
+
         $booking = $this->service->update($id, $request->validated());
         return $this->successResponse(new BookingResource($booking), 'Booking updated successfully');
+    }
+
+    public function assignOperations(Request $request, int|string $id): JsonResponse
+    {
+        $request->validate([
+            'operations_id' => 'required|exists:users,id',
+        ]);
+
+        $booking = $this->service->update($id, ['operations_id' => $request->input('operations_id')]);
+        return $this->successResponse(new BookingResource($booking), 'Operations fulfillment assigned successfully');
     }
 
     public function destroy(int|string $id): JsonResponse

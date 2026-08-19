@@ -24,7 +24,9 @@ class AuthController extends BaseApiController
     {
         $result = $this->authService->login(
             $request->input('email'),
-            $request->input('password')
+            $request->input('password'),
+            $request->input('role_type'),
+            $request->input('role_id')
         );
 
         return $this->successResponse([

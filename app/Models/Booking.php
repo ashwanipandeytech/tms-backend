@@ -18,6 +18,7 @@ class Booking extends BaseModel
         'quotation_id',
         'customer_id',
         'package_id',
+        'operations_id',
         'travel_date',
         'total_amount',
         'paid_amount',
@@ -52,6 +53,11 @@ class Booking extends BaseModel
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function assignedOperations(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'operations_id');
     }
 
     public function creator(): BelongsTo

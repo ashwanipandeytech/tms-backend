@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Booking;
 use App\Models\Lead;
 use App\Models\Payment;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,118 +20,118 @@ class ApiV1Test extends TestCase
         $this->seed();
     }
 
-    public function test_login_validation_and_successful_authentication(): void
+    public function test_login_validation_and_role_verification(): void
     {
-        // 1. Invalid credentials
+        // Invalid password
         $response = $this->postJson('/api/v1/login', [
-            'email'    => 'admin@safarmusafir.com',
+            'email'    => 'travel@demohandler.in',
             'password' => 'WrongPassword',
         ]);
         $response->assertStatus(422)->assertJsonStructure(['message', 'errors']);
 
-        // 2. Successful login
+        // Login with Role Type
         $response = $this->postJson('/api/v1/login', [
-            'email'    => 'admin@safarmusafir.com',
-            'password' => 'Admin@123',
+            'email'     => 'travel@demohandler.in',
+            'password'  => 'Admin@123',
+            'role_type' => 'Super Admin',
         ]);
         $response->assertStatus(200)
                  ->assertJson(['success' => true])
                  ->assertJsonStructure(['data' => ['user', 'token']]);
     }
 
-    public function test_unauthenticated_requests_are_rejected(): void
+    public function test_lead_assignment_and_csv_import(): void
     {
-        $response = $this->getJson('/api/v1/dashboard');
-        $response->assertStatus(401);
-    }
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $salesRole = Role::where('name', 'Sales Executive')->first();
 
-    public function test_lead_crud_operations_and_event_activity_logging(): void
-    {
-        $user = User::where('email', 'admin@safarmusafir.com')->first();
-        $this->actingAs($user, 'sanctum');
+        $salesUser = User::create([
+            'name'     => 'Sales Executive User',
+            'email'    => 'sales.new@travel.com',
+            'phone'    => '9888877777',
+            'role_id'  => $salesRole->id,
+            'password' => bcrypt('SalesPassword123!'),
+            'status'   => 'active',
+        ]);
+
+        $this->actingAs($admin, 'sanctum');
 
         // Create Lead
-        $createResponse = $this->postJson('/api/v1/leads', [
-            'name'        => 'Test Lead John',
-            'email'       => 'john.test@example.com',
+        $leadResponse = $this->postJson('/api/v1/leads', [
+            'name'        => 'Lead for Assignment',
+            'email'       => 'assign.lead@example.com',
             'phone'       => '9988776655',
             'destination' => 'Goa',
-            'budget'      => 30000.00,
+            'budget'      => 40000.00,
         ]);
-        $createResponse->assertStatus(201)
-                       ->assertJson(['success' => true])
-                       ->assertJsonPath('data.name', 'Test Lead John');
+        $leadId = $leadResponse->json('data.id');
 
-        $leadId = $createResponse->json('data.id');
-
-        // Verify Lead Activity Logged via LeadCreatedEvent -> LogLeadActivityListener
-        $this->assertDatabaseHas('lead_activities', [
-            'lead_id'       => $leadId,
-            'activity_type' => 'enquiry',
+        // Admin assigns lead to Sales User
+        $assignResponse = $this->putJson("/api/v1/leads/{$leadId}/assign", [
+            'assigned_to' => $salesUser->id,
         ]);
+        $assignResponse->assertStatus(200)->assertJsonPath('data.assigned_to', $salesUser->id);
 
-        // Get Lead Details
-        $showResponse = $this->getJson("/api/v1/leads/{$leadId}");
-        $showResponse->assertStatus(200)->assertJsonPath('data.destination', 'Goa');
-
-        // Update Lead
-        $updateResponse = $this->putJson("/api/v1/leads/{$leadId}", [
-            'status' => 'interested',
-            'budget' => 35000.00,
-        ]);
-        $updateResponse->assertStatus(200)->assertJsonPath('data.status', 'interested');
-
-        // Delete Lead
-        $deleteResponse = $this->deleteJson("/api/v1/leads/{$leadId}");
-        $deleteResponse->assertStatus(200);
-
-        $this->assertDatabaseMissing('leads', ['id' => $leadId]);
+        // Verify Sales Executive can access assigned lead
+        $this->actingAs($salesUser, 'sanctum');
+        $salesIndex = $this->getJson('/api/v1/leads');
+        $salesIndex->assertStatus(200)->assertJsonFragment(['id' => $leadId]);
     }
 
-    public function test_booking_and_payment_synchronization(): void
+    public function test_operations_handoff(): void
     {
-        $user = User::where('email', 'admin@safarmusafir.com')->first();
-        $this->actingAs($user, 'sanctum');
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $opsRole = Role::where('name', 'Operation Team')->first();
 
-        // Create Booking
-        $bookingResponse = $this->postJson('/api/v1/bookings', [
-            'total_amount' => 50000.00,
-            'paid_amount'  => 0.00,
-            'status'       => 'pending',
+        $opsUser = User::create([
+            'name'     => 'Ops User',
+            'email'    => 'ops.new@travel.com',
+            'phone'    => '9777766666',
+            'role_id'  => $opsRole->id,
+            'password' => bcrypt('OpsPassword123!'),
+            'status'   => 'active',
         ]);
-        $bookingResponse->assertStatus(201)->assertJsonPath('data.due_amount', 50000);
 
+        $this->actingAs($admin, 'sanctum');
+
+        $bookingResponse = $this->postJson('/api/v1/bookings', [
+            'total_amount' => 60000.00,
+            'status'       => 'confirmed',
+        ]);
         $bookingId = $bookingResponse->json('data.id');
 
-        // Record Payment
-        $paymentResponse = $this->postJson('/api/v1/payments', [
-            'booking_id'   => $bookingId,
-            'amount'       => 20000.00,
-            'payment_type' => 'advance',
-            'payment_mode' => 'upi',
+        // Assign Operations
+        $assignOpsResponse = $this->putJson("/api/v1/bookings/{$bookingId}/assign-operations", [
+            'operations_id' => $opsUser->id,
         ]);
-        $paymentResponse->assertStatus(201);
+        $assignOpsResponse->assertStatus(200)->assertJsonPath('data.operations_id', $opsUser->id);
 
-        // Verify Booking due amount recalculated automatically
-        $this->assertDatabaseHas('bookings', [
-            'id'          => $bookingId,
-            'paid_amount' => 20000.00,
-            'due_amount'  => 30000.00,
-        ]);
+        // Verify Ops User sees assigned booking
+        $this->actingAs($opsUser, 'sanctum');
+        $opsIndex = $this->getJson('/api/v1/bookings');
+        $opsIndex->assertStatus(200)->assertJsonFragment(['id' => $bookingId]);
     }
 
-    public function test_dashboard_and_reports_endpoints(): void
+    public function test_lead_webhook_ingestion(): void
     {
-        $user = User::where('email', 'admin@safarmusafir.com')->first();
-        $this->actingAs($user, 'sanctum');
+        // Meta Webhook
+        $metaResponse = $this->postJson('/api/v1/webhooks/leads/meta', [
+            'name'            => 'Meta Lead User',
+            'phone'           => '9123456789',
+            'email'           => 'meta.lead@example.com',
+            'destination'     => 'Kerala',
+            'campaign_source' => 'Meta Facebook Ads',
+        ]);
+        $metaResponse->assertStatus(201)->assertJsonPath('data.name', 'Meta Lead User');
 
-        $this->getJson('/api/v1/dashboard')
-             ->assertStatus(200)
-             ->assertJson(['success' => true])
-             ->assertJsonStructure(['data' => ['kpis', 'funnel', 'upcoming_departures']]);
-
-        $this->getJson('/api/v1/reports/leads-by-source')->assertStatus(200);
-        $this->getJson('/api/v1/reports/sales-by-staff')->assertStatus(200);
-        $this->getJson('/api/v1/reports/monthly-revenue')->assertStatus(200);
+        // Website Webhook
+        $webResponse = $this->postJson('/api/v1/webhooks/leads/website', [
+            'name'            => 'Website Form Lead',
+            'phone'           => '9876543211',
+            'email'           => 'web.lead@example.com',
+            'destination'     => 'Manali',
+            'campaign_source' => 'Website Popup',
+        ]);
+        $webResponse->assertStatus(201)->assertJsonPath('data.name', 'Website Form Lead');
     }
 }

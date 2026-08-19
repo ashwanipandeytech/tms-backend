@@ -17,6 +17,7 @@ class Lead extends BaseModel
         'email',
         'phone',
         'source_id',
+        'campaign_source',
         'destination',
         'travel_date',
         'pax_adults',

@@ -1,13 +1,13 @@
 {
   "info": {
-    "name": "Safar Musafir Travel CRM \u2014 Laravel 13 REST API",
-    "description": "Comprehensive Postman collection for Safar Musafir Travel CRM API with example payloads, authentication, and seed values.",
+    "name": "TMS Backend REST API",
+    "description": "Comprehensive Postman collection for TMS Backend API with example payloads, authentication, RBAC workflows, and seed values.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://127.0.0.1:8013/api/v1",
+      "value": "https://apisafarsystem.demohandler.in/public/api/v1",
       "type": "string"
     },
     {
@@ -50,7 +50,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@safarmusafir.com\",\n  \"password\": \"Admin@123\"\n}"
+              "raw": "{\n  \"email\": \"travel@demohandler.in\",\n  \"password\": \"Admin@123\",\n  \"role_type\": \"Super Admin\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/login",
@@ -224,7 +224,7 @@
       ]
     },
     {
-      "name": "3. Lead Management",
+      "name": "3. Lead Management & Webhooks",
       "item": [
         {
           "name": "List Leads (Paginated & Filtered)",
@@ -303,33 +303,7 @@
           }
         },
         {
-          "name": "Get Lead Details",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/leads/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "leads",
-                "1"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Lead",
+          "name": "Assign Lead to Sales Executive",
           "request": {
             "method": "PUT",
             "header": [
@@ -348,84 +322,23 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"interested\",\n  \"budget\": 60000.0,\n  \"notes\": \"Updated budget after discussion\"\n}"
+              "raw": "{\n  \"assigned_to\": 5\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/leads/1",
+              "raw": "{{baseUrl}}/leads/1/assign",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "leads",
-                "1"
+                "1",
+                "assign"
               ]
             }
           }
         },
         {
-          "name": "Delete Lead",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/leads/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "leads",
-                "1"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "4. Follow-up Management",
-      "item": [
-        {
-          "name": "List Follow-ups",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/follow-ups?status=pending",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "follow-ups"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "pending"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Schedule Follow-up",
+          "name": "Meta Lead Webhook Ingestion",
           "request": {
             "method": "POST",
             "header": [
@@ -436,23 +349,52 @@
               {
                 "key": "Accept",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"lead_id\": 1,\n  \"assigned_to\": 1,\n  \"follow_up_date\": \"2026-08-20\",\n  \"follow_up_time\": \"14:30:00\",\n  \"type\": \"call\",\n  \"remarks\": \"Call back regarding revised quotation\",\n  \"status\": \"pending\"\n}"
+              "raw": "{\n  \"name\": \"Meta Lead User\",\n  \"phone\": \"9123456789\",\n  \"email\": \"meta.lead@example.com\",\n  \"destination\": \"Kerala\",\n  \"campaign_source\": \"Meta Facebook Ads\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/follow-ups",
+              "raw": "{{baseUrl}}/webhooks/leads/meta",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "follow-ups"
+                "webhooks",
+                "leads",
+                "meta"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Website Form Webhook Ingestion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Website Form Lead\",\n  \"phone\": \"9876543211\",\n  \"email\": \"web.lead@example.com\",\n  \"destination\": \"Manali\",\n  \"campaign_source\": \"Website Popup\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/leads/website",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "leads",
+                "website"
               ]
             }
           }
@@ -460,7 +402,7 @@
       ]
     },
     {
-      "name": "5. Bookings Management",
+      "name": "4. Bookings Management & Handoff",
       "item": [
         {
           "name": "List Bookings",
@@ -494,9 +436,9 @@
           }
         },
         {
-          "name": "Create Booking",
+          "name": "Assign Operations Staff to Booking",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
@@ -513,15 +455,17 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"lead_id\": 1,\n  \"customer_id\": 1,\n  \"package_id\": 1,\n  \"travel_date\": \"2026-10-01\",\n  \"total_amount\": 75000.0,\n  \"paid_amount\": 25000.0,\n  \"status\": \"confirmed\"\n}"
+              "raw": "{\n  \"operations_id\": 8\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/bookings",
+              "raw": "{{baseUrl}}/bookings/1/assign-operations",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "bookings"
+                "bookings",
+                "1",
+                "assign-operations"
               ]
             }
           }
@@ -529,7 +473,7 @@
       ]
     },
     {
-      "name": "6. Payments Management",
+      "name": "5. Payments Management",
       "item": [
         {
           "name": "Record Payment",
@@ -560,232 +504,6 @@
               ],
               "path": [
                 "payments"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "7. Package & Inventory Management",
-      "item": [
-        {
-          "name": "List Packages",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/packages",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "packages"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create Package",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Magical Kashmir 6D/5N\",\n  \"category_id\": 1,\n  \"nights\": 5,\n  \"days\": 6,\n  \"price\": 35000.0,\n  \"inclusions\": \"Hotels, Breakfast, Houseboat stay, Shikara ride\",\n  \"exclusions\": \"Flight tickets, personal expenses\",\n  \"status\": \"active\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/packages",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "packages"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Hotels",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/hotels",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "hotels"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Resorts",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/resorts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "resorts"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Villas",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/villas",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "villas"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "8. Admin & Staff Management",
-      "item": [
-        {
-          "name": "List Users / Staff",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create New Staff User",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Amit Kumar\",\n  \"email\": \"amit@safarmusafir.com\",\n  \"phone\": \"9812345678\",\n  \"role_id\": 3,\n  \"password\": \"SalesPassword123!\",\n  \"status\": \"active\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Roles & Permissions",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/roles",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "roles"
               ]
             }
           }

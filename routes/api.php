@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\FollowUpController;
 use App\Http\Controllers\Api\V1\HotelController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\LeadController;
+use App\Http\Controllers\Api\V1\LeadWebhookController;
 use App\Http\Controllers\Api\V1\PackageController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\QuotationController;
@@ -25,8 +26,13 @@ use App\Http\Controllers\Api\V1\VillaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Public routes
+    // Public routes & Webhooks
     Route::post('login', [AuthController::class, 'login']);
+
+    Route::prefix('webhooks')->group(function () {
+        Route::post('leads/meta', [LeadWebhookController::class, 'handleMetaWebhook']);
+        Route::post('leads/website', [LeadWebhookController::class, 'handleWebsiteWebhook']);
+    });
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -40,6 +46,11 @@ Route::prefix('v1')->group(function () {
             Route::get('sales-by-staff', [ReportController::class, 'salesByStaff']);
             Route::get('monthly-revenue', [ReportController::class, 'monthlyRevenue']);
         });
+
+        // Specialized Lead & Booking Assignment Endpoints
+        Route::put('leads/{lead}/assign', [LeadController::class, 'assign']);
+        Route::post('leads/import', [LeadController::class, 'importCsv']);
+        Route::put('bookings/{booking}/assign-operations', [BookingController::class, 'assignOperations']);
 
         // Core CRM Resource REST API Endpoints
         Route::apiResource('leads', LeadController::class);
