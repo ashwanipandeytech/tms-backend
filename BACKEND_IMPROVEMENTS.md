@@ -11,10 +11,50 @@ This document tracks current issues, missing endpoints, and feature requests blo
 
 ---
 
+## ✨ Missing Features / Endpoints Required
+
+For the **User Management** panel, the frontend requires the following CRUD operations which are currently missing. Here are the expected payloads for User Add, Edit, and Delete:
+
+### 1. Add User
+- **Endpoint**: `POST /api/v1/users`
+- **Expected Request Payload**:
+  ```json
+  {
+    "name": "Jane Doe",
+    "email": "jane@demohandler.in",
+    "phone": "9876543210",
+    "password": "Password@123",
+    "password_confirmation": "Password@123",
+    "role_id": 3,
+    "status": "active"
+  }
+  ```
+
+### 2. Edit User
+- **Endpoint**: `PUT /api/v1/users/{id}`
+- **Expected Request Payload**:
+  *(Note: Password should be optional when editing)*
+  ```json
+  {
+    "name": "Jane Doe Updated",
+    "email": "jane@demohandler.in",
+    "phone": "9876543211",
+    "role_id": 3,
+    "status": "inactive" 
+  }
+  ```
+
+### 3. Delete User
+- **Endpoint**: `DELETE /api/v1/users/{id}`
+- **Expected Request Payload**: *(None required, just the ID path parameter)*
+
+---
+
 ## ✨ Action Items for Backend Team
 
-- [ ] Check server logs and fix the `500 Internal Server Error` on both `/api/v1/customers` and `/api/v1/users`.
-- [ ] Ensure both endpoints return standard JSON data matching the structure of other endpoints (e.g., `success`, `message`, `data`).
+- [ ] Check server logs and fix the `500 Internal Server Error` on both `GET /api/v1/customers` and `GET /api/v1/users`.
+- [ ] Implement the `POST`, `PUT`, and `DELETE` endpoints for User Management utilizing the payloads above.
+- [ ] Ensure all endpoints return standard JSON data matching the structure of other endpoints (e.g., `success`, `message`, `data`).
 - [ ] Document these endpoints and their response structures in `API_DOCUMENTATION.md`.
 
 *Note: Update the Status column to `🟡 Pending` when investigating, and `🟢 Resolved` once fixed and documented.*
