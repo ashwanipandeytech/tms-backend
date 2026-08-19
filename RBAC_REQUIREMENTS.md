@@ -72,6 +72,15 @@ The APIs currently return all records for all authenticated users. They must be 
   - **Payload:** `multipart/form-data` with a CSV file.
   - **Logic:** Parse CSV, check for duplicate emails/phones, bulk insert, and return import status. Auth: Admin only.
 
+### 3.5 User Management Endpoints
+- `POST /api/v1/users`
+  - **Payload:** `{ "name": "...", "email": "...", "password": "...", "role_id": 3 }`
+  - **Auth:** Super Admin / Manager only.
+  - **Logic:** Validate data, hash password, ensure the assigned `role_id` exists, and create the user.
+- `PUT /api/v1/users/{id}`
+  - **Payload:** `{ "name": "...", "email": "...", "role_id": 3, "status": "active" }`
+  - **Auth:** Super Admin / Manager only.
+
 ## 4. Reports & Analytics API
 
 Update the `ReportController` to provide role-based performance metrics:
