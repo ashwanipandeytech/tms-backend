@@ -21,7 +21,9 @@ class UserResource extends BaseResource
             'role'       => $this->whenLoaded('role', fn() => [
                 'id'          => $this->role->id,
                 'name'        => $this->role->name,
-                'permissions' => $this->role->permissions->map(fn($p) => $p->module . '.' . $p->action),
+                'permissions' => $this->role->relationLoaded('permissions')
+                    ? $this->role->permissions->map(fn($p) => $p->module . '.' . $p->action)
+                    : [],
             ]),
             'last_login' => $this->last_login?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

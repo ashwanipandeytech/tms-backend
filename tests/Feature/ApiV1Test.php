@@ -134,4 +134,59 @@ class ApiV1Test extends TestCase
         ]);
         $webResponse->assertStatus(201)->assertJsonPath('data.name', 'Website Form Lead');
     }
+
+    public function test_get_customers_and_users_list(): void
+    {
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $this->actingAs($admin, 'sanctum');
+
+        // Test GET /api/v1/customers
+        $custResponse = $this->getJson('/api/v1/customers');
+        $custResponse->assertStatus(200)
+                    ->assertJson(['success' => true])
+                    ->assertJsonStructure(['data', 'meta']);
+
+        // Test GET /api/v1/users
+        $userResponse = $this->getJson('/api/v1/users');
+        $userResponse->assertStatus(200)
+                    ->assertJson(['success' => true])
+                    ->assertJsonStructure(['data', 'meta']);
+    }
+
+    public function test_user_crud_operations(): void
+    {
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $this->actingAs($admin, 'sanctum');
+
+        // 1. Add User
+        $createResponse = $this->postJson('/api/v1/users', [
+            'name'                  => 'Jane Doe',
+            'email'                 => 'jane@demohandler.in',
+            'phone'                 => '9876543210',
+            'password'              => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'role_id'               => 3,
+            'status'                => 'active',
+        ]);
+        $createResponse->assertStatus(201)
+                       ->assertJsonPath('data.email', 'jane@demohandler.in');
+
+        $userId = $createResponse->json('data.id');
+
+        // 2. Edit User (without password)
+        $updateResponse = $this->putJson("/api/v1/users/{$userId}", [
+            'name'   => 'Jane Doe Updated',
+            'email'  => 'jane@demohandler.in',
+            'phone'  => '9876543211',
+            'role_id'=> 3,
+            'status' => 'inactive',
+        ]);
+        $updateResponse->assertStatus(200)
+                       ->assertJsonPath('data.name', 'Jane Doe Updated')
+                       ->assertJsonPath('data.status', 'inactive');
+
+        // 3. Delete User
+        $deleteResponse = $this->deleteJson("/api/v1/users/{$userId}");
+        $deleteResponse->assertStatus(200);
+    }
 }

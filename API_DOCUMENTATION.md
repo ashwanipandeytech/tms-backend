@@ -56,7 +56,7 @@
       "id": 1,
       "company_id": null,
       "name": "Super Admin",
-      "email": "admin@safarmusafir.com",
+      "email": "travel@demohandler.in",
       "phone": "9999999999",
       "avatar": null,
       "status": "active",
@@ -92,41 +92,6 @@
 | Authorization | String | Required. `Bearer <token>` |
 | Accept | String | Required. `application/json` |
 
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "Dashboard metrics retrieved successfully",
-  "data": {
-    "kpis": {
-      "total_leads": 120,
-      "new_enquiries": 15,
-      "followups_today": 8,
-      "confirmed": 24,
-      "revenue": 450000.00,
-      "pending_pay": 120000.00
-    },
-    "funnel": {
-      "new": 15,
-      "contacted": 30,
-      "interested": 25,
-      "confirmed": 24
-    },
-    "upcoming_departures": [
-      {
-        "id": 1,
-        "booking_no": "BK-66C1E2A",
-        "travel_date": "2026-09-01",
-        "package": {
-          "id": 1,
-          "name": "Kashmir Super Tour"
-        }
-      }
-    ]
-  }
-}
-```
-
 ---
 
 ## 3. Lead Management & RBAC Workflows
@@ -136,41 +101,35 @@
 **URL**: `{{baseUrl}}/leads`  
 **Method**: `GET`  
 
+---
+
+## 4. Bookings & Customer Management
+
+### 4.1 List Customers `[FIXED]`
+
+**URL**: `{{baseUrl}}/customers`  
+**Method**: `GET`  
+
 #### Headers
 | Header | Type | Description |
 |---|---|---|
 | Authorization | String | Required. `Bearer <token>` |
 | Accept | String | Required. `application/json` |
 
-#### Query Parameters
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| page | Integer | No | Page number for pagination (Default: `1`). |
-| per_page | Integer | No | Number of records per page (Default: `15`). |
-| search | String | No | Search string matching name, email, phone, or destination. |
-| status | String | No | Filter by lead status (`new`, `contacted`, `interested`, `confirmed`, `lost`). |
-
 #### Response Structure (Success)
 ```json
 {
   "success": true,
-  "message": "Leads retrieved successfully",
+  "message": "Customers retrieved successfully",
   "data": [
     {
       "id": 1,
-      "name": "Rahul Sharma",
-      "email": "rahul@example.com",
-      "phone": "9876543210",
-      "destination": "Himachal Pradesh",
-      "travel_date": "2026-09-15",
-      "pax_adults": 2,
-      "pax_children": 1,
-      "budget": 55000.00,
-      "status": "new",
-      "assigned_to": 1,
-      "campaign_source": "Meta Facebook Ads",
-      "notes": "Prefers luxury hotel with mountain view",
-      "created_at": "2026-08-18T10:00:00+00:00"
+      "name": "Vikram Malhotra",
+      "email": "vikram.m@example.com",
+      "phone": "9876500001",
+      "city": "Delhi",
+      "status": "active",
+      "created_at": "2026-08-19T14:48:00+00:00"
     }
   ],
   "meta": {
@@ -186,135 +145,144 @@
 
 ---
 
-### 3.2 Assign Lead to Sales Executive `[NEW]`
+## 5. User & Staff Management (CRUD)
 
-**URL**: `{{baseUrl}}/leads/{id}/assign`  
-**Method**: `PUT`  
-**Content-Type**: `application/json`  
+### 5.1 List Users `[FIXED]`
+
+**URL**: `{{baseUrl}}/users`  
+**Method**: `GET`  
 
 #### Headers
 | Header | Type | Description |
 |---|---|---|
 | Authorization | String | Required. `Bearer <token>` |
-| Content-Type | String | Required. `application/json` |
-
-#### Request Payload
-```json
-{
-  "assigned_to": 5
-}
-```
-
-#### Request Parameters Description
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| assigned_to | Integer | Yes | User ID of the assigned Sales Executive. |
+| Accept | String | Required. `application/json` |
 
 #### Response Structure (Success)
 ```json
 {
   "success": true,
-  "message": "Lead assigned successfully",
-  "data": {
-    "id": 1,
-    "name": "Rahul Sharma",
-    "assigned_to": 5,
-    "created_at": "2026-08-18T10:00:00+00:00"
+  "message": "Users retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "company_id": null,
+      "name": "Super Admin",
+      "email": "travel@demohandler.in",
+      "phone": "9999999999",
+      "status": "active",
+      "role": {
+        "id": 1,
+        "name": "Super Admin"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 5
   }
 }
 ```
 
 ---
 
-### 3.3 CSV Lead Bulk Import `[NEW]`
+### 5.2 Add User `[NEW]`
 
-**URL**: `{{baseUrl}}/leads/import`  
-**Method**: `POST`  
-**Content-Type**: `multipart/form-data`  
-
-#### Request Payload
-- **file**: CSV File (`name, phone, email, destination`)
-
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "CSV Import completed: 45 leads imported, 3 duplicate leads skipped",
-  "data": {
-    "imported_count": 45,
-    "skipped_count": 3
-  }
-}
-```
-
----
-
-### 3.4 Ingest Lead via Meta Webhook `[NEW]`
-
-**URL**: `{{baseUrl}}/webhooks/leads/meta`  
+**URL**: `{{baseUrl}}/users`  
 **Method**: `POST`  
 **Content-Type**: `application/json`  
 
 #### Request Payload
 ```json
 {
-  "name": "Ankit Kumar",
-  "phone": "9812345678",
-  "email": "ankit@example.com",
-  "destination": "Goa",
-  "campaign_source": "Meta Facebook Ads"
+  "name": "Jane Doe",
+  "email": "jane@demohandler.in",
+  "phone": "9876543210",
+  "password": "Password@123",
+  "password_confirmation": "Password@123",
+  "role_id": 3,
+  "status": "active"
 }
 ```
-
----
-
-## 4. Bookings Management & Operations Handoff
-
-### 4.1 Assign Operations Staff to Booking `[NEW]`
-
-**URL**: `{{baseUrl}}/bookings/{id}/assign-operations`  
-**Method**: `PUT`  
-**Content-Type**: `application/json`  
-
-#### Headers
-| Header | Type | Description |
-|---|---|---|
-| Authorization | String | Required. `Bearer <token>` |
-| Content-Type | String | Required. `application/json` |
-
-#### Request Payload
-```json
-{
-  "operations_id": 8
-}
-```
-
-#### Request Parameters Description
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| operations_id | Integer | Yes | User ID of assigned Operations fulfillment staff. |
 
 #### Response Structure (Success)
 ```json
 {
   "success": true,
-  "message": "Operations fulfillment assigned successfully",
+  "message": "User created successfully",
   "data": {
-    "id": 1,
-    "booking_no": "BK-66C1E2A",
-    "operations_id": 8,
-    "status": "confirmed"
+    "id": 6,
+    "name": "Jane Doe",
+    "email": "jane@demohandler.in",
+    "phone": "9876543210",
+    "status": "active",
+    "role": {
+      "id": 3,
+      "name": "Sales Executive"
+    }
   }
 }
 ```
 
 ---
 
-## 5. Response Error Codes Reference
+### 5.3 Edit User `[NEW]`
+
+**URL**: `{{baseUrl}}/users/{id}`  
+**Method**: `PUT`  
+**Content-Type**: `application/json`  
+
+#### Request Payload *(Password is optional)*
+```json
+{
+  "name": "Jane Doe Updated",
+  "email": "jane@demohandler.in",
+  "phone": "9876543211",
+  "role_id": 3,
+  "status": "inactive"
+}
+```
+
+#### Response Structure (Success)
+```json
+{
+  "success": true,
+  "message": "User updated successfully",
+  "data": {
+    "id": 6,
+    "name": "Jane Doe Updated",
+    "email": "jane@demohandler.in",
+    "phone": "9876543211",
+    "status": "inactive"
+  }
+}
+```
+
+---
+
+### 5.4 Delete User `[NEW]`
+
+**URL**: `{{baseUrl}}/users/{id}`  
+**Method**: `DELETE`  
+
+#### Response Structure (Success)
+```json
+{
+  "success": true,
+  "message": "User deleted successfully",
+  "data": null
+}
+```
+
+---
+
+## 6. Response Error Codes Reference
 
 | Error Code | HTTP Status | Detail Description |
 |---|---|---|
 | `UNAUTHENTICATED` | 401 | Missing or invalid Sanctum Authorization Bearer Token header. |
-| `FORBIDDEN` | 403 | User role lacks permission for the requested resource (e.g. Sales staff accessing unassigned lead). |
+| `FORBIDDEN` | 403 | User role lacks permission for the requested resource. |
 | `VALIDATION_ERROR` | 422 | Required fields missing or failed data validation checks. |
 | `RESOURCE_NOT_FOUND` | 404 | The requested record ID does not exist in the system. |
