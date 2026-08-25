@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to Hostinger Stage
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ftp.demohandler.in
           username: u479097380
@@ -45,7 +45,8 @@ jobs:
             **/vendor/**
 
       - name: Send Success Email
-        if: success()
+        if: success() && secrets.MAIL_USERNAME != ''
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -63,7 +64,8 @@ jobs:
             Run URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Send Failure Email
-        if: failure()
+        if: failure() && secrets.MAIL_USERNAME != ''
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
