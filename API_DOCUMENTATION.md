@@ -38,14 +38,6 @@
 | Operation Team | `ops@demohandler.in` | `Ops@123` | 4 |
 | Accounts | `accounts@demohandler.in` | `Accounts@123` | 5 |
 
-#### Request Parameters Description
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| email | String | Yes | User account email address. |
-| password | String | Yes | User account password. |
-| role_type | String | No | Optional role selection name (`Super Admin`, `Sales Executive`, `Operation Team`, `Accounts`). |
-| role_id | Integer | No | Optional assigned role ID. |
-
 ---
 
 ## 2. Subscription Plans Management API (`/api/v1/plans`) `[NEW]`
@@ -144,37 +136,89 @@
 }
 ```
 
-#### Response Structure (Success 201 Created)
+---
+
+## 4. Tenant Role & Permission Management APIs `[NEW / UPDATED]`
+
+### 4.1 List Module Permissions Matrix (`GET /api/v1/permissions`)
+- **URL**: `{{baseUrl}}/permissions`
+- **Method**: `GET`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Response Structure (Success)
 ```json
 {
   "success": true,
-  "message": "Company subscription account set up successfully",
-  "data": {
-    "company": {
-      "id": 105,
-      "name": "Sunrise Travel Agency",
-      "subdomain": "sunrisetravel",
-      "plan_id": 1,
-      "addon_user_seats": 0,
-      "subscription_status": "active",
-      "billing_cycle": "monthly",
-      "subscription_starts_at": "2026-08-25T12:00:00Z",
-      "subscription_ends_at": "2026-09-25T12:00:00Z",
-      "database_type": "shared"
-    },
-    "total_allowed_seats": 1,
-    "tenant_admin": {
-      "id": 42,
-      "name": "Rajesh Kumar",
-      "email": "admin@sunrisetravel.com"
+  "message": "Permissions retrieved successfully",
+  "data": [
+    {
+      "module": "leads",
+      "permissions": [
+        { "id": 1, "action": "view", "description": "View Leads" },
+        { "id": 2, "action": "create", "description": "Create Leads" },
+        { "id": 3, "action": "edit", "description": "Edit Leads" },
+        { "id": 4, "action": "delete", "description": "Delete Leads" }
+      ]
     }
-  }
+  ]
 }
 ```
 
 ---
 
-## 4. Response Error Codes Reference `[UPDATED]`
+### 4.2 Create Custom Role (`POST /api/v1/roles`)
+- **URL**: `{{baseUrl}}/roles`
+- **Method**: `POST`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Request Payload
+```json
+{
+  "name": "Senior Sales Specialist",
+  "description": "Custom role for senior sales reps",
+  "permissions": [1, 2, 3, 5]
+}
+```
+
+---
+
+### 4.3 Update Custom Role (`PUT /api/v1/roles/{id}`)
+- **URL**: `{{baseUrl}}/roles/{id}`
+- **Method**: `PUT`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Request Payload
+```json
+{
+  "name": "Senior Sales Specialist",
+  "description": "Updated role description",
+  "permissions": [1, 2, 3, 5, 6]
+}
+```
+
+---
+
+### 4.4 Create Staff User & Assign Role (`POST /api/v1/users`)
+- **URL**: `{{baseUrl}}/users`
+- **Method**: `POST`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Request Payload
+```json
+{
+  "name": "Amit Verma",
+  "email": "amit@sunrisetravel.com",
+  "phone": "9876543210",
+  "role_id": 3,
+  "password": "Password@123",
+  "password_confirmation": "Password@123",
+  "status": "active"
+}
+```
+
+---
+
+## 5. Response Error Codes Reference `[UPDATED]`
 
 | Error Code | HTTP Status | Detail Description |
 |---|---|---|
