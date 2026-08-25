@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\LeadController;
 use App\Http\Controllers\Api\V1\LeadWebhookController;
 use App\Http\Controllers\Api\V1\PackageController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QuotationController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ResortController;
@@ -72,6 +73,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('customers', CustomerController::class);
         Route::apiResource('users', UserController::class);
         Route::apiResource('roles', RoleController::class);
+        Route::get('permissions', [PermissionController::class, 'index']);
 
         // Feature Gated Modules: Tour Packages
         Route::middleware(CheckPlanModule::class . ':packages')->group(function () {

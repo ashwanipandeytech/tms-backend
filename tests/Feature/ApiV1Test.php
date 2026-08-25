@@ -322,4 +322,40 @@ class ApiV1Test extends TestCase
         $secondLeadResponse->assertStatus(422)
                           ->assertJsonPath('error_code', 'DEMO_PLAN_LIMIT_REACHED');
     }
+
+    public function test_role_and_permission_management_for_tenants(): void
+    {
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $this->actingAs($admin, 'sanctum');
+
+        // 1. Get List of Permissions
+        $permResponse = $this->getJson('/api/v1/permissions');
+        $permResponse->assertStatus(200)->assertJson(['success' => true]);
+
+        $permissionIds = \App\Models\Permission::pluck('id')->take(3)->toArray();
+
+        // 2. Create Custom Role with Permissions
+        $createRoleResponse = $this->postJson('/api/v1/roles', [
+            'name'        => 'Senior Sales Specialist',
+            'description' => 'Custom role for senior sales reps',
+            'permissions' => $permissionIds,
+        ]);
+        $createRoleResponse->assertStatus(201)
+                           ->assertJsonPath('data.name', 'Senior Sales Specialist');
+
+        $roleId = $createRoleResponse->json('data.id');
+
+        // 3. Assign Role to User
+        $createUserResponse = $this->postJson('/api/v1/users', [
+            'name'                  => 'Senior Rep User',
+            'email'                 => 'senior.sales@agency.com',
+            'phone'                 => '9555566666',
+            'role_id'               => $roleId,
+            'password'              => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'status'                => 'active',
+        ]);
+        $createUserResponse->assertStatus(201)
+                           ->assertJsonPath('data.role.id', $roleId);
+    }
 }

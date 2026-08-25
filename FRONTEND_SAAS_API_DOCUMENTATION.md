@@ -124,31 +124,12 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-### 2.2 Create Subscription Plan (Super Admin)
-- **URL**: `POST /api/v1/plans`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
-
-#### Request Body Payload
-```json
-{
-  "name": "Custom Agency Plan",
-  "monthly_price": 79.00,
-  "yearly_price": 790.00,
-  "base_user_seats": 10,
-  "addon_seat_price": 5.00,
-  "modules": ["leads", "followups", "packages", "bookings"],
-  "database_type": "shared",
-  "status": "active"
-}
-```
-
----
-
 ## 3. Tenant Onboarding API (`/api/v1/admin/tenants`) `[NEW]`
 
-### 3.1 Onboard / Register New Company Account (Self-Service Website & Super Admin)
+### 3.1 Onboard / Register New Company Account
 - **URL**: `POST /api/v1/admin/tenants`
-- **Authentication**: **Public & Optional Bearer Token** (No Token required for public website signups; Super Admin token accepted if logged in).
+- **Authentication**: **Public & Optional Bearer Token**
+- **Automatic Default Role Seeding**: Upon onboarding, the backend automatically seeds default tenant roles (`Manager`, `Sales Executive`, `Operation Team`, `Accounts`) specifically for that company ID.
 
 #### Request Body Payload
 ```json
@@ -166,143 +147,106 @@ This document details **only** the new and modified API endpoints, error codes, 
 }
 ```
 
-#### Success Response (201 Created)
-```json
-{
-  "success": true,
-  "message": "Company subscription account set up successfully",
-  "data": {
-    "company": {
-      "id": 105,
-      "name": "Sunrise Travel Agency",
-      "subdomain": "sunrisetravel",
-      "plan_id": 1,
-      "addon_user_seats": 0,
-      "subscription_status": "active",
-      "billing_cycle": "monthly",
-      "subscription_starts_at": "2026-08-25T12:00:00Z",
-      "subscription_ends_at": "2026-09-25T12:00:00Z",
-      "database_type": "shared",
-      "subscription_plan": {
-        "id": 1,
-        "name": "Free Trial Plan",
-        "base_user_seats": 1
-      }
-    },
-    "total_allowed_seats": 1,
-    "tenant_admin": {
-      "id": 42,
-      "name": "Rajesh Kumar",
-      "email": "admin@sunrisetravel.com"
-    }
-  }
-}
-```
-
 ---
 
-### 3.2 List All Subscribers (Super Admin Only)
-- **URL**: `GET /api/v1/admin/tenants`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
+## 4. Tenant Role & Permission Management APIs `[NEW / UPDATED]`
 
-#### Query Parameters
-- `page` (integer, optional)
-- `per_page` (integer, default: 15)
+### 4.1 List All Module Permissions Matrix (`GET /api/v1/permissions`)
+Used by frontend UI to render checkbox matrices when creating or editing custom roles.
 
----
-
-### 3.3 Purchase / Update Add-on User Seats (Super Admin Only)
-- **URL**: `PUT /api/v1/admin/tenants/{id}/addon-seats`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
-
-#### Request Body Payload
-```json
-{
-  "addon_user_seats": 5
-}
-```
+- **URL**: `GET /api/v1/permissions`
+- **Headers**: `Authorization: Bearer <token>`
 
 #### Success Response (200 OK)
 ```json
 {
   "success": true,
-  "message": "Add-on user seats updated successfully",
-  "data": {
-    "company_id": 105,
-    "company_name": "Sunrise Travel Agency",
-    "base_user_seats": 5,
-    "addon_user_seats": 5,
-    "total_allowed_seats": 10
-  }
+  "message": "Permissions retrieved successfully",
+  "data": [
+    {
+      "module": "leads",
+      "permissions": [
+        { "id": 1, "action": "view", "description": "View Leads" },
+        { "id": 2, "action": "create", "description": "Create Leads" },
+        { "id": 3, "action": "edit", "description": "Edit Leads" },
+        { "id": 4, "action": "delete", "description": "Delete Leads" }
+      ]
+    },
+    {
+      "module": "bookings",
+      "permissions": [
+        { "id": 5, "action": "view", "description": "View Bookings" },
+        { "id": 6, "action": "create", "description": "Create Bookings" }
+      ]
+    }
+  ]
 }
 ```
 
 ---
 
-## 4. Resource Creation Limit Errors `[NEW]`
+### 4.2 Create Custom Role with Permissions (`POST /api/v1/roles`)
+Allows Company Admin to create custom roles and assign specific permission IDs.
 
-### 4.1 Free Trial / Demo Plan 1-Entry Limit (`422 Unprocessable Entity`)
-Subscribers under the **Free Trial Plan** can view, edit, and explore all modules, but are restricted to creating a maximum of **1 entry per module** (1 lead, 1 booking, 1 hotel, etc.).
+- **URL**: `POST /api/v1/roles`
+- **Headers**: `Authorization: Bearer <token>`
 
-When creating a 2nd entry in any module, the API returns:
+#### Request Body Payload
 ```json
 {
-  "success": false,
-  "error_code": "DEMO_PLAN_LIMIT_REACHED",
-  "message": "The Free Trial plan is restricted to 1 entry per module. Please upgrade your subscription plan to create additional leads.",
-  "errors": {
-    "demo_limit": [
-      "Free Trial limit of 1 entry reached for module 'leads'."
-    ]
-  }
-}
-```
-
-#### Frontend Action Required
-Catch `error_code === 'DEMO_PLAN_LIMIT_REACHED'` and open an Upgrade Modal prompting the user to upgrade to Starter or Professional Plan.
-
----
-
-### 4.2 User Seat Limit Enforcement (`422 Unprocessable Entity`)
-When a Company Admin attempts to add a new staff user (`POST /api/v1/users`), if active staff count exceeds allowed seats:
-
-```json
-{
-  "success": false,
-  "error_code": "USER_SEAT_LIMIT_REACHED",
-  "message": "User seat limit reached (8 max seats). Please purchase add-on seats or upgrade your subscription plan.",
-  "errors": {
-    "seat_limit": [
-      "Maximum allowed user seats (8) reached."
-    ]
-  }
+  "name": "Senior Sales Specialist",
+  "description": "Custom role for senior sales reps",
+  "permissions": [1, 2, 3, 5]
 }
 ```
 
 ---
 
-## 5. Subscription Status & Feature Gating Errors
+### 4.3 Update Role Permissions (`PUT /api/v1/roles/{id}`)
+- **URL**: `PUT /api/v1/roles/{id}`
+- **Headers**: `Authorization: Bearer <token>`
 
-### 5.1 Expired Subscription (`402 Payment Required`)
-If the subscriber's subscription date has passed or status is suspended:
-
+#### Request Body Payload
 ```json
 {
-  "success": false,
-  "error_code": "SUBSCRIPTION_EXPIRED",
-  "message": "Your company subscription has expired or been suspended. Please renew your subscription to access API endpoints."
+  "name": "Senior Sales Specialist",
+  "description": "Updated role description",
+  "permissions": [1, 2, 3, 5, 6]
 }
 ```
 
 ---
 
-### 5.2 Plan Feature Restricted (`403 Forbidden`)
-If a subscriber attempts to call an endpoint not included in their subscription plan:
+### 4.4 Create Staff User & Assign Role (`POST /api/v1/users`)
+Company Admin registers internal staff members and assigns them a tenant `role_id`.
 
+- **URL**: `POST /api/v1/users`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Request Body Payload
 ```json
 {
-  "success": false,
-  "error_code": "PLAN_FEATURE_RESTRICTED",
-  "message": "The 'finance' module is not enabled under your company's current 'Starter Plan'. Please upgrade your plan to access this feature."
+  "name": "Amit Verma",
+  "email": "amit@sunrisetravel.com",
+  "phone": "9876543210",
+  "role_id": 3,
+  "password": "Password@123",
+  "password_confirmation": "Password@123",
+  "status": "active"
 }
 ```
+
+---
+
+## 5. Error Code Reference
+
+| Error Code | HTTP Status | Detail Description |
+|---|---|---|
+| `UNAUTHENTICATED` | 401 | Missing or invalid Sanctum Authorization Bearer Token header. |
+| `FORBIDDEN` | 403 | User role lacks permission for the requested resource. |
+| `PLAN_FEATURE_RESTRICTED` | 403 | Module feature not enabled under current subscription plan tier. |
+| `SUBSCRIPTION_EXPIRED` | 402 | Company subscription has expired or been suspended. |
+| `DEMO_PLAN_LIMIT_REACHED` | 422 | Free Trial plan is restricted to 1 entry per resource module. |
+| `USER_SEAT_LIMIT_REACHED` | 422 | Active staff user count exceeds total allowed plan seats. |
+| `VALIDATION_ERROR` | 422 | Required fields missing or failed data validation checks. |
+| `RESOURCE_NOT_FOUND` | 404 | The requested record ID does not exist in the system. |
