@@ -25,6 +25,7 @@ use App\Models\Resort;
 use App\Models\ResortRoom;
 use App\Models\Role;
 use App\Models\Setting;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleType;
@@ -37,6 +38,49 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // 0. Subscription Plans
+        $starterPlan = SubscriptionPlan::updateOrCreate(
+            ['slug' => 'starter-plan'],
+            [
+                'name'             => 'Starter Plan',
+                'monthly_price'    => 49.00,
+                'yearly_price'     => 490.00,
+                'base_user_seats'  => 5,
+                'addon_seat_price' => 5.00,
+                'modules'          => ['leads', 'followups', 'bookings'],
+                'database_type'    => 'shared',
+                'status'           => 'active',
+            ]
+        );
+
+        $proPlan = SubscriptionPlan::updateOrCreate(
+            ['slug' => 'professional-plan'],
+            [
+                'name'             => 'Professional Plan',
+                'monthly_price'    => 99.00,
+                'yearly_price'     => 990.00,
+                'base_user_seats'  => 15,
+                'addon_seat_price' => 5.00,
+                'modules'          => ['leads', 'followups', 'packages', 'inventory', 'bookings'],
+                'database_type'    => 'shared',
+                'status'           => 'active',
+            ]
+        );
+
+        $enterprisePlan = SubscriptionPlan::updateOrCreate(
+            ['slug' => 'enterprise-plan'],
+            [
+                'name'             => 'Enterprise Plan',
+                'monthly_price'    => 249.00,
+                'yearly_price'     => 2490.00,
+                'base_user_seats'  => 999,
+                'addon_seat_price' => 0.00,
+                'modules'          => ['leads', 'followups', 'packages', 'inventory', 'bookings', 'finance', 'reports'],
+                'database_type'    => 'dedicated',
+                'status'           => 'active',
+            ]
+        );
+
         // 1. Roles
         $roles = [
             ['id' => 1, 'name' => 'Super Admin', 'description' => 'Full access across system'],

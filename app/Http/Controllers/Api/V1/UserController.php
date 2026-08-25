@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,24 @@ class UserController extends BaseApiController
 
     public function store(Request $request): JsonResponse
     {
+        $currentUser = $request->user();
+
+        // Enforce User Seat Limit for Tenant Companies
+        if ($currentUser && $currentUser->company) {
+            $company = $currentUser->company;
+            $activeUsers = User::where('company_id', $company->id)->where('status', 'active')->count();
+            $allowedSeats = $company->total_allowed_seats;
+
+            if ($activeUsers >= $allowedSeats) {
+                return $this->errorResponse(
+                    "User seat limit reached ({$allowedSeats} max seats). Please purchase add-on seats or upgrade your subscription plan.",
+                    422,
+                    ['seat_limit' => ["Maximum allowed user seats ({$allowedSeats}) reached."]],
+                    'USER_SEAT_LIMIT_REACHED'
+                );
+            }
+        }
+
         $data = $request->validate([
             'name'                  => 'required|string|max:100',
             'email'                 => 'required|email|max:150|unique:users,email',

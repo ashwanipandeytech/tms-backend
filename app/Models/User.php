@@ -66,7 +66,7 @@ class User extends Authenticatable
 
     public function isSuperAdmin(): bool
     {
-        return $this->role_id === 1 || ($this->role && strtolower($this->role->name) === 'super admin');
+        return (int) $this->role_id === 1;
     }
 
     public function hasPermission(string $module, string $action): bool

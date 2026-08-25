@@ -19,14 +19,18 @@ use App\Http\Controllers\Api\V1\QuotationController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ResortController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\SubscriptionPlanController;
+use App\Http\Controllers\Api\V1\TenantAdminController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\VillaController;
+use App\Http\Middleware\CheckPlanModule;
+use App\Http\Middleware\CheckSubscriptionActive;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Public routes & Webhooks
+    // Public routes & Lead Ingestion Webhooks
     Route::post('login', [AuthController::class, 'login']);
 
     Route::prefix('webhooks')->group(function () {
@@ -34,11 +38,16 @@ Route::prefix('v1')->group(function () {
         Route::post('leads/website', [LeadWebhookController::class, 'handleWebsiteWebhook']);
     });
 
-    // Protected routes
-    Route::middleware('auth:sanctum')->group(function () {
+    // Protected Routes (Sanctum Auth + Active Subscription Check)
+    Route::middleware(['auth:sanctum', CheckSubscriptionActive::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
         Route::get('dashboard', [DashboardController::class, 'index']);
+
+        // Super Admin Platform Endpoints (Plan Management & Tenant Onboarding)
+        Route::apiResource('plans', SubscriptionPlanController::class);
+        Route::apiResource('admin/tenants', TenantAdminController::class)->only(['index', 'store']);
+        Route::put('admin/tenants/{id}/addon-seats', [TenantAdminController::class, 'updateAddonSeats']);
 
         // Reports
         Route::prefix('reports')->group(function () {
@@ -47,28 +56,39 @@ Route::prefix('v1')->group(function () {
             Route::get('monthly-revenue', [ReportController::class, 'monthlyRevenue']);
         });
 
-        // Specialized Lead & Booking Assignment Endpoints
+        // Core Lead & Booking Endpoints
         Route::put('leads/{lead}/assign', [LeadController::class, 'assign']);
         Route::post('leads/import', [LeadController::class, 'importCsv']);
         Route::put('bookings/{booking}/assign-operations', [BookingController::class, 'assignOperations']);
 
-        // Core CRM Resource REST API Endpoints
         Route::apiResource('leads', LeadController::class);
         Route::apiResource('follow-ups', FollowUpController::class);
         Route::apiResource('bookings', BookingController::class);
         Route::apiResource('quotations', QuotationController::class);
         Route::apiResource('payments', PaymentController::class);
-        Route::apiResource('packages', PackageController::class);
-        Route::apiResource('hotels', HotelController::class);
-        Route::apiResource('resorts', ResortController::class);
-        Route::apiResource('villas', VillaController::class);
-        Route::apiResource('vendors', VendorController::class);
-        Route::apiResource('vehicles', VehicleController::class);
-        Route::apiResource('cab-bookings', CabBookingController::class);
         Route::apiResource('customers', CustomerController::class);
-        Route::apiResource('invoices', InvoiceController::class);
-        Route::apiResource('expenses', ExpenseController::class);
         Route::apiResource('users', UserController::class);
         Route::apiResource('roles', RoleController::class);
+
+        // Feature Gated Modules: Tour Packages
+        Route::middleware(CheckPlanModule::class . ':packages')->group(function () {
+            Route::apiResource('packages', PackageController::class);
+        });
+
+        // Feature Gated Modules: Inventory & Cabs
+        Route::middleware(CheckPlanModule::class . ':inventory')->group(function () {
+            Route::apiResource('hotels', HotelController::class);
+            Route::apiResource('resorts', ResortController::class);
+            Route::apiResource('villas', VillaController::class);
+            Route::apiResource('vendors', VendorController::class);
+            Route::apiResource('vehicles', VehicleController::class);
+            Route::apiResource('cab-bookings', CabBookingController::class);
+        });
+
+        // Feature Gated Modules: Finance
+        Route::middleware(CheckPlanModule::class . ':finance')->group(function () {
+            Route::apiResource('invoices', InvoiceController::class);
+            Route::apiResource('expenses', ExpenseController::class);
+        });
     });
 });
