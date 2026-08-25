@@ -8,7 +8,7 @@
 
 ## 1. Authentication
 
-### 1.1 User Login `[NEW]`
+### 1.1 User Login `[UPDATED]`
 
 **URL**: `{{baseUrl}}/login`  
 **Method**: `POST`  
@@ -46,181 +46,127 @@
 | role_type | String | No | Optional role selection name (`Super Admin`, `Sales Executive`, `Operation Team`, `Accounts`). |
 | role_id | Integer | No | Optional assigned role ID. |
 
+---
+
+## 2. Subscription Plans Management API (`/api/v1/plans`) `[NEW]`
+
+### 2.1 List All Subscription Plans (Public & Authenticated)
+- **URL**: `{{baseUrl}}/plans`
+- **Method**: `GET`
+- **Authentication**: **Public & Optional Bearer Token**
+  - *Public Call*: Returns all active subscription plans.
+  - *Authenticated Call* (`Authorization: Bearer <token>`): Includes `"is_current_plan": true` on the subscriber's active plan.
+
 #### Response Structure (Success)
 ```json
 {
   "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
+  "message": "Subscription plans retrieved successfully",
+  "data": [
+    {
       "id": 1,
-      "company_id": null,
-      "name": "Super Admin",
-      "email": "travel@demohandler.in",
-      "phone": "9999999999",
-      "avatar": null,
+      "name": "Free Trial Plan",
+      "slug": "free-trial-plan",
+      "monthly_price": "0.00",
+      "yearly_price": "0.00",
+      "base_user_seats": 1,
+      "addon_seat_price": "0.00",
+      "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
+      "database_type": "shared",
       "status": "active",
-      "role": {
-        "id": 1,
-        "name": "Super Admin",
-        "permissions": [
-          "leads.view",
-          "leads.create",
-          "leads.edit",
-          "leads.delete",
-          "bookings.view"
-        ]
-      }
+      "is_current_plan": true
     },
-    "token": "1|dAWlrrKKKOGw8j1pezVlSH1pFgy96cXRG0afFhgN5c62c9df"
-  }
-}
-```
-
----
-
-## 2. Dashboard & Analytics
-
-### 2.1 Get Dashboard Metrics `[NEW]`
-
-**URL**: `{{baseUrl}}/dashboard`  
-**Method**: `GET`  
-
-#### Headers
-| Header | Type | Description |
-|---|---|---|
-| Authorization | String | Required. `Bearer <token>` |
-| Accept | String | Required. `application/json` |
-
----
-
-## 3. Lead Management & RBAC Workflows
-
-### 3.1 List Leads `[UPDATED]`
-
-**URL**: `{{baseUrl}}/leads`  
-**Method**: `GET`  
-
----
-
-## 4. Bookings & Customer Management
-
-### 4.1 List Customers `[FIXED]`
-
-**URL**: `{{baseUrl}}/customers`  
-**Method**: `GET`  
-
-#### Headers
-| Header | Type | Description |
-|---|---|---|
-| Authorization | String | Required. `Bearer <token>` |
-| Accept | String | Required. `application/json` |
-
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "Customers retrieved successfully",
-  "data": [
     {
-      "id": 1,
-      "name": "Vikram Malhotra",
-      "email": "vikram.m@example.com",
-      "phone": "9876500001",
-      "city": "Delhi",
+      "id": 2,
+      "name": "Starter Plan",
+      "slug": "starter-plan",
+      "monthly_price": "49.00",
+      "yearly_price": "490.00",
+      "base_user_seats": 5,
+      "addon_seat_price": "5.00",
+      "modules": ["leads", "followups", "bookings"],
+      "database_type": "shared",
       "status": "active",
-      "created_at": "2026-08-19T14:48:00+00:00"
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1,
-    "from": 1,
-    "to": 1
-  }
-}
-```
-
----
-
-## 5. User & Staff Management (CRUD)
-
-### 5.1 List Users `[FIXED]`
-
-**URL**: `{{baseUrl}}/users`  
-**Method**: `GET`  
-
-#### Headers
-| Header | Type | Description |
-|---|---|---|
-| Authorization | String | Required. `Bearer <token>` |
-| Accept | String | Required. `application/json` |
-
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "Users retrieved successfully",
-  "data": [
+      "is_current_plan": false
+    },
     {
-      "id": 1,
-      "company_id": null,
-      "name": "Super Admin",
-      "email": "travel@demohandler.in",
-      "phone": "9999999999",
+      "id": 3,
+      "name": "Professional Plan",
+      "slug": "professional-plan",
+      "monthly_price": "99.00",
+      "yearly_price": "990.00",
+      "base_user_seats": 15,
+      "addon_seat_price": "5.00",
+      "modules": ["leads", "followups", "packages", "inventory", "bookings"],
+      "database_type": "shared",
       "status": "active",
-      "role": {
-        "id": 1,
-        "name": "Super Admin"
-      }
+      "is_current_plan": false
+    },
+    {
+      "id": 4,
+      "name": "Enterprise Plan",
+      "slug": "enterprise-plan",
+      "monthly_price": "249.00",
+      "yearly_price": "2490.00",
+      "base_user_seats": 999,
+      "addon_seat_price": "0.00",
+      "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
+      "database_type": "dedicated",
+      "status": "active",
+      "is_current_plan": false
     }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 5
-  }
+  ]
 }
 ```
 
 ---
 
-### 5.2 Add User `[NEW]`
+## 3. Tenant Onboarding API (`/api/v1/admin/tenants`) `[NEW]`
 
-**URL**: `{{baseUrl}}/users`  
-**Method**: `POST`  
-**Content-Type**: `application/json`  
+### 3.1 Register Company Account (Public Website & Super Admin)
+- **URL**: `{{baseUrl}}/admin/tenants`
+- **Method**: `POST`
+- **Authentication**: **Public & Optional Bearer Token**
 
 #### Request Payload
 ```json
 {
-  "name": "Jane Doe",
-  "email": "jane@demohandler.in",
-  "phone": "9876543210",
-  "password": "Password@123",
-  "password_confirmation": "Password@123",
-  "role_id": 3,
-  "status": "active"
+  "company_name": "Sunrise Travel Agency",
+  "subdomain": "sunrisetravel",
+  "plan_id": 1,
+  "billing_cycle": "monthly",
+  "addon_user_seats": 0,
+  "database_type": "shared",
+  "admin_name": "Rajesh Kumar",
+  "admin_email": "admin@sunrisetravel.com",
+  "admin_phone": "9811122334",
+  "initial_password": "Password@123"
 }
 ```
 
-#### Response Structure (Success)
+#### Response Structure (Success 201 Created)
 ```json
 {
   "success": true,
-  "message": "User created successfully",
+  "message": "Company subscription account set up successfully",
   "data": {
-    "id": 6,
-    "name": "Jane Doe",
-    "email": "jane@demohandler.in",
-    "phone": "9876543210",
-    "status": "active",
-    "role": {
-      "id": 3,
-      "name": "Sales Executive"
+    "company": {
+      "id": 105,
+      "name": "Sunrise Travel Agency",
+      "subdomain": "sunrisetravel",
+      "plan_id": 1,
+      "addon_user_seats": 0,
+      "subscription_status": "active",
+      "billing_cycle": "monthly",
+      "subscription_starts_at": "2026-08-25T12:00:00Z",
+      "subscription_ends_at": "2026-09-25T12:00:00Z",
+      "database_type": "shared"
+    },
+    "total_allowed_seats": 1,
+    "tenant_admin": {
+      "id": 42,
+      "name": "Rajesh Kumar",
+      "email": "admin@sunrisetravel.com"
     }
   }
 }
@@ -228,61 +174,15 @@
 
 ---
 
-### 5.3 Edit User `[NEW]`
-
-**URL**: `{{baseUrl}}/users/{id}`  
-**Method**: `PUT`  
-**Content-Type**: `application/json`  
-
-#### Request Payload *(Password is optional)*
-```json
-{
-  "name": "Jane Doe Updated",
-  "email": "jane@demohandler.in",
-  "phone": "9876543211",
-  "role_id": 3,
-  "status": "inactive"
-}
-```
-
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "User updated successfully",
-  "data": {
-    "id": 6,
-    "name": "Jane Doe Updated",
-    "email": "jane@demohandler.in",
-    "phone": "9876543211",
-    "status": "inactive"
-  }
-}
-```
-
----
-
-### 5.4 Delete User `[NEW]`
-
-**URL**: `{{baseUrl}}/users/{id}`  
-**Method**: `DELETE`  
-
-#### Response Structure (Success)
-```json
-{
-  "success": true,
-  "message": "User deleted successfully",
-  "data": null
-}
-```
-
----
-
-## 6. Response Error Codes Reference
+## 4. Response Error Codes Reference `[UPDATED]`
 
 | Error Code | HTTP Status | Detail Description |
 |---|---|---|
 | `UNAUTHENTICATED` | 401 | Missing or invalid Sanctum Authorization Bearer Token header. |
 | `FORBIDDEN` | 403 | User role lacks permission for the requested resource. |
+| `PLAN_FEATURE_RESTRICTED` | 403 | Module feature not enabled under current subscription plan tier. |
+| `SUBSCRIPTION_EXPIRED` | 402 | Company subscription has expired or been suspended. |
+| `DEMO_PLAN_LIMIT_REACHED` | 422 | Free Trial plan is restricted to 1 entry per resource module. |
+| `USER_SEAT_LIMIT_REACHED` | 422 | Active staff user count exceeds total allowed plan seats. |
 | `VALIDATION_ERROR` | 422 | Required fields missing or failed data validation checks. |
 | `RESOURCE_NOT_FOUND` | 404 | The requested record ID does not exist in the system. |
