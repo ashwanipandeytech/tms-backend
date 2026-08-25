@@ -12,9 +12,20 @@ use Illuminate\Support\Str;
 
 class SubscriptionPlanController extends BaseApiController
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $plans = SubscriptionPlan::where('status', 'active')->get();
+
+        // Optional authenticated user check (if Sanctum bearer token is provided)
+        $user = auth('sanctum')->user();
+        if ($user && $user->company) {
+            $currentPlanId = $user->company->plan_id;
+            $plans->transform(function ($plan) use ($currentPlanId) {
+                $plan->is_current_plan = ((int) $plan->id === (int) $currentPlanId);
+                return $plan;
+            });
+        }
+
         return $this->successResponse($plans, 'Subscription plans retrieved successfully');
     }
 

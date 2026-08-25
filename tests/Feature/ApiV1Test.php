@@ -277,4 +277,49 @@ class ApiV1Test extends TestCase
                     ->assertJson(['success' => true])
                     ->assertJsonStructure(['data', 'meta']);
     }
+
+    public function test_free_trial_demo_plan_limit_restriction(): void
+    {
+        $demoPlan = SubscriptionPlan::where('slug', 'free-trial-plan')->first();
+
+        $demoCompany = Company::create([
+            'name'                => 'Demo Trial Travel Agency',
+            'subdomain'           => 'demotrialagency',
+            'plan_id'             => $demoPlan->id,
+            'subscription_status' => 'active',
+        ]);
+
+        $role = Role::where('name', 'Manager')->first();
+
+        $demoUser = User::create([
+            'company_id' => $demoCompany->id,
+            'name'       => 'Demo User',
+            'email'      => 'demo.user@agency.com',
+            'phone'      => '9444455555',
+            'role_id'    => $role->id,
+            'password'   => bcrypt('Password@123'),
+            'status'     => 'active',
+        ]);
+
+        $this->actingAs($demoUser, 'sanctum');
+
+        // 1st entry creation -> Allowed
+        $firstLeadResponse = $this->postJson('/api/v1/leads', [
+            'name'        => 'First Demo Lead',
+            'phone'       => '9911122233',
+            'email'       => 'firstdemo@example.com',
+            'destination' => 'Kashmir',
+        ]);
+        $firstLeadResponse->assertStatus(201);
+
+        // 2nd entry creation -> Blocked with 422 DEMO_PLAN_LIMIT_REACHED
+        $secondLeadResponse = $this->postJson('/api/v1/leads', [
+            'name'        => 'Second Demo Lead',
+            'phone'       => '9911122244',
+            'email'       => 'seconddemo@example.com',
+            'destination' => 'Himachal',
+        ]);
+        $secondLeadResponse->assertStatus(422)
+                          ->assertJsonPath('error_code', 'DEMO_PLAN_LIMIT_REACHED');
+    }
 }

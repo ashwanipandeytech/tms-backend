@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\VehicleController;
 use App\Http\Controllers\Api\V1\VendorController;
 use App\Http\Controllers\Api\V1\VillaController;
+use App\Http\Middleware\CheckDemoPlanLimit;
 use App\Http\Middleware\CheckPlanModule;
 use App\Http\Middleware\CheckSubscriptionActive;
 use Illuminate\Support\Facades\Route;
@@ -40,8 +41,8 @@ Route::prefix('v1')->group(function () {
         Route::post('leads/website', [LeadWebhookController::class, 'handleWebsiteWebhook']);
     });
 
-    // Protected Routes (Sanctum Auth + Active Subscription Check)
-    Route::middleware(['auth:sanctum', CheckSubscriptionActive::class])->group(function () {
+    // Protected Routes (Sanctum Auth + Active Subscription Check + Demo Plan Limit Check)
+    Route::middleware(['auth:sanctum', CheckSubscriptionActive::class, CheckDemoPlanLimit::class])->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
         Route::get('dashboard', [DashboardController::class, 'index']);

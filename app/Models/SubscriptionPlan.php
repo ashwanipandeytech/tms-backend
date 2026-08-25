@@ -37,4 +37,9 @@ class SubscriptionPlan extends BaseModel
 
         return in_array(strtolower($moduleName), array_map('strtolower', $this->modules), true);
     }
+
+    public function isDemoPlan(): bool
+    {
+        return $this->slug === 'free-trial-plan' || (float) $this->monthly_price === 0.0;
+    }
 }

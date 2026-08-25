@@ -54,9 +54,11 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ## 2. Subscription Plans Management API (`/api/v1/plans`) `[NEW]`
 
-### 2.1 List All Subscription Plans (Public Website & Pricing Page)
+### 2.1 List All Subscription Plans (Public Pricing Page & Authenticated Dashboard)
 - **URL**: `GET /api/v1/plans`
-- **Authentication**: Public (No Token Required)
+- **Authentication**: **Public & Optional Bearer Token**
+  - *Public Call*: Returns all active subscription plans.
+  - *Authenticated Call* (`Authorization: Bearer <token>`): Includes `"is_current_plan": true` on the subscriber's active plan.
 
 #### Response (200 OK)
 ```json
@@ -66,6 +68,19 @@ This document details **only** the new and modified API endpoints, error codes, 
   "data": [
     {
       "id": 1,
+      "name": "Free Trial Plan",
+      "slug": "free-trial-plan",
+      "monthly_price": "0.00",
+      "yearly_price": "0.00",
+      "base_user_seats": 1,
+      "addon_seat_price": "0.00",
+      "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
+      "database_type": "shared",
+      "status": "active",
+      "is_current_plan": true
+    },
+    {
+      "id": 2,
       "name": "Starter Plan",
       "slug": "starter-plan",
       "monthly_price": "49.00",
@@ -74,10 +89,11 @@ This document details **only** the new and modified API endpoints, error codes, 
       "addon_seat_price": "5.00",
       "modules": ["leads", "followups", "bookings"],
       "database_type": "shared",
-      "status": "active"
+      "status": "active",
+      "is_current_plan": false
     },
     {
-      "id": 2,
+      "id": 3,
       "name": "Professional Plan",
       "slug": "professional-plan",
       "monthly_price": "99.00",
@@ -86,10 +102,11 @@ This document details **only** the new and modified API endpoints, error codes, 
       "addon_seat_price": "5.00",
       "modules": ["leads", "followups", "packages", "inventory", "bookings"],
       "database_type": "shared",
-      "status": "active"
+      "status": "active",
+      "is_current_plan": false
     },
     {
-      "id": 3,
+      "id": 4,
       "name": "Enterprise Plan",
       "slug": "enterprise-plan",
       "monthly_price": "249.00",
@@ -98,7 +115,8 @@ This document details **only** the new and modified API endpoints, error codes, 
       "addon_seat_price": "0.00",
       "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
       "database_type": "dedicated",
-      "status": "active"
+      "status": "active",
+      "is_current_plan": false
     }
   ]
 }
@@ -139,7 +157,7 @@ This document details **only** the new and modified API endpoints, error codes, 
   "subdomain": "sunrisetravel",
   "plan_id": 1,
   "billing_cycle": "monthly",
-  "addon_user_seats": 3,
+  "addon_user_seats": 0,
   "database_type": "shared",
   "admin_name": "Rajesh Kumar",
   "admin_email": "admin@sunrisetravel.com",
@@ -159,7 +177,7 @@ This document details **only** the new and modified API endpoints, error codes, 
       "name": "Sunrise Travel Agency",
       "subdomain": "sunrisetravel",
       "plan_id": 1,
-      "addon_user_seats": 3,
+      "addon_user_seats": 0,
       "subscription_status": "active",
       "billing_cycle": "monthly",
       "subscription_starts_at": "2026-08-25T12:00:00Z",
@@ -167,11 +185,11 @@ This document details **only** the new and modified API endpoints, error codes, 
       "database_type": "shared",
       "subscription_plan": {
         "id": 1,
-        "name": "Starter Plan",
-        "base_user_seats": 5
+        "name": "Free Trial Plan",
+        "base_user_seats": 1
       }
     },
-    "total_allowed_seats": 8,
+    "total_allowed_seats": 1,
     "tenant_admin": {
       "id": 42,
       "name": "Rajesh Kumar",
@@ -221,14 +239,33 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-## 4. User Seat Limit Enforcement (`POST /api/v1/users`) `[MODIFIED]`
+## 4. Resource Creation Limit Errors `[NEW]`
 
-### Behavior
-When a Company Admin attempts to add a new staff user (`POST /api/v1/users`), the system calculates:
-$$\text{Current Active Users} \ge \text{Total Allowed Seats} (\text{Base Seats} + \text{Add-on Seats})$$
+### 4.1 Free Trial / Demo Plan 1-Entry Limit (`422 Unprocessable Entity`)
+Subscribers under the **Free Trial Plan** can view, edit, and explore all modules, but are restricted to creating a maximum of **1 entry per module** (1 lead, 1 booking, 1 hotel, etc.).
 
-### Error Response (422 Unprocessable Entity)
-If capacity is full, the API returns:
+When creating a 2nd entry in any module, the API returns:
+```json
+{
+  "success": false,
+  "error_code": "DEMO_PLAN_LIMIT_REACHED",
+  "message": "The Free Trial plan is restricted to 1 entry per module. Please upgrade your subscription plan to create additional leads.",
+  "errors": {
+    "demo_limit": [
+      "Free Trial limit of 1 entry reached for module 'leads'."
+    ]
+  }
+}
+```
+
+#### Frontend Action Required
+Catch `error_code === 'DEMO_PLAN_LIMIT_REACHED'` and open an Upgrade Modal prompting the user to upgrade to Starter or Professional Plan.
+
+---
+
+### 4.2 User Seat Limit Enforcement (`422 Unprocessable Entity`)
+When a Company Admin attempts to add a new staff user (`POST /api/v1/users`), if active staff count exceeds allowed seats:
+
 ```json
 {
   "success": false,
@@ -242,12 +279,9 @@ If capacity is full, the API returns:
 }
 ```
 
-#### Frontend Action Required
-Catch `error_code === 'USER_SEAT_LIMIT_REACHED'` and display the **Seat Limit Exceeded Modal Prompt** encouraging the Company Admin to purchase add-on seats or upgrade.
-
 ---
 
-## 5. Subscription Status & Feature Gating Errors `[NEW]`
+## 5. Subscription Status & Feature Gating Errors
 
 ### 5.1 Expired Subscription (`402 Payment Required`)
 If the subscriber's subscription date has passed or status is suspended:
@@ -259,13 +293,11 @@ If the subscriber's subscription date has passed or status is suspended:
   "message": "Your company subscription has expired or been suspended. Please renew your subscription to access API endpoints."
 }
 ```
-#### Frontend Action Required
-Redirect Company Admin to Billing & Renewal screen (`/settings/billing`).
 
 ---
 
 ### 5.2 Plan Feature Restricted (`403 Forbidden`)
-If a staff member or company admin attempts to call an endpoint (e.g. `GET /api/v1/invoices` or `GET /api/v1/hotels`) not included in their subscription plan:
+If a subscriber attempts to call an endpoint not included in their subscription plan:
 
 ```json
 {
@@ -274,5 +306,3 @@ If a staff member or company admin attempts to call an endpoint (e.g. `GET /api/
   "message": "The 'finance' module is not enabled under your company's current 'Starter Plan'. Please upgrade your plan to access this feature."
 }
 ```
-#### Frontend Action Required
-Display an Upgrade Banner overlay on locked module navigation items.

@@ -39,6 +39,20 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 0. Subscription Plans
+        $trialPlan = SubscriptionPlan::updateOrCreate(
+            ['slug' => 'free-trial-plan'],
+            [
+                'name'             => 'Free Trial Plan',
+                'monthly_price'    => 0.00,
+                'yearly_price'     => 0.00,
+                'base_user_seats'  => 1,
+                'addon_seat_price' => 0.00,
+                'modules'          => ['leads', 'followups', 'packages', 'inventory', 'bookings', 'finance', 'reports'],
+                'database_type'    => 'shared',
+                'status'           => 'active',
+            ]
+        );
+
         $starterPlan = SubscriptionPlan::updateOrCreate(
             ['slug' => 'starter-plan'],
             [
