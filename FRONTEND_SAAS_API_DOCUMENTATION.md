@@ -10,7 +10,7 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ### Endpoints Details
 - **URL**: `POST /api/v1/login`
-- **Authentication**: Public
+- **Authentication**: Public (No Token Required)
 
 ### Request Body Payload
 ```json
@@ -54,9 +54,9 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ## 2. Subscription Plans Management API (`/api/v1/plans`) `[NEW]`
 
-### 2.1 List All Subscription Plans
+### 2.1 List All Subscription Plans (Public Website & Pricing Page)
 - **URL**: `GET /api/v1/plans`
-- **Headers**: `Authorization: Bearer <token>`
+- **Authentication**: Public (No Token Required)
 
 #### Response (200 OK)
 ```json
@@ -126,11 +126,11 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-## 3. Super Admin Tenant Onboarding API (`/api/v1/admin/tenants`) `[NEW]`
+## 3. Tenant Onboarding API (`/api/v1/admin/tenants`) `[NEW]`
 
-### 3.1 Onboard New Subscriber Company Account
+### 3.1 Onboard / Register New Company Account (Self-Service Website & Super Admin)
 - **URL**: `POST /api/v1/admin/tenants`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
+- **Authentication**: **Public & Optional Bearer Token** (No Token required for public website signups; Super Admin token accepted if logged in).
 
 #### Request Body Payload
 ```json
@@ -183,7 +183,7 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-### 3.2 List All Subscribers
+### 3.2 List All Subscribers (Super Admin Only)
 - **URL**: `GET /api/v1/admin/tenants`
 - **Headers**: `Authorization: Bearer <super_admin_token>`
 
@@ -193,7 +193,7 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-### 3.3 Purchase / Update Add-on User Seats
+### 3.3 Purchase / Update Add-on User Seats (Super Admin Only)
 - **URL**: `PUT /api/v1/admin/tenants/{id}/addon-seats`
 - **Headers**: `Authorization: Bearer <super_admin_token>`
 
@@ -275,4 +275,4 @@ If a staff member or company admin attempts to call an endpoint (e.g. `GET /api/
 }
 ```
 #### Frontend Action Required
-Display a Upgrade Banner overlay on locked module navigation items.
+Display an Upgrade Banner overlay on locked module navigation items.

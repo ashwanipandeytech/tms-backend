@@ -30,8 +30,10 @@ use App\Http\Middleware\CheckSubscriptionActive;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Public routes & Lead Ingestion Webhooks
+    // Public routes, Plan List & Tenant Onboarding Registration
     Route::post('login', [AuthController::class, 'login']);
+    Route::get('plans', [SubscriptionPlanController::class, 'index']);
+    Route::post('admin/tenants', [TenantAdminController::class, 'store']); // Public & Super Admin Tenant Onboarding
 
     Route::prefix('webhooks')->group(function () {
         Route::post('leads/meta', [LeadWebhookController::class, 'handleMetaWebhook']);
@@ -44,9 +46,9 @@ Route::prefix('v1')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::get('dashboard', [DashboardController::class, 'index']);
 
-        // Super Admin Platform Endpoints (Plan Management & Tenant Onboarding)
-        Route::apiResource('plans', SubscriptionPlanController::class);
-        Route::apiResource('admin/tenants', TenantAdminController::class)->only(['index', 'store']);
+        // Super Admin Management Endpoints
+        Route::apiResource('plans', SubscriptionPlanController::class)->except(['index']);
+        Route::get('admin/tenants', [TenantAdminController::class, 'index']);
         Route::put('admin/tenants/{id}/addon-seats', [TenantAdminController::class, 'updateAddonSeats']);
 
         // Reports
