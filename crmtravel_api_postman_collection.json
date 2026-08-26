@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "TMS Backend REST API",
-    "description": "Comprehensive Postman collection for TMS Backend API with example payloads, authentication, RBAC workflows, and seed values.",
+    "name": "Safar Travel CRM & SaaS ERP REST API Collection",
+    "description": "Comprehensive Postman collection for Safar Travel CRM & Multi-Tenant Subscription ERP system with full payloads, authentication bearer tokens, role permissions, and tenant onboarding.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -21,7 +21,7 @@
       "name": "1. Authentication",
       "item": [
         {
-          "name": "Login",
+          "name": "User Login",
           "event": [
             {
               "listen": "test",
@@ -64,7 +64,7 @@
           }
         },
         {
-          "name": "Get Current User Details",
+          "name": "Get Current Logged-In User Details",
           "request": {
             "method": "GET",
             "header": [
@@ -89,7 +89,7 @@
           }
         },
         {
-          "name": "Logout",
+          "name": "User Logout",
           "request": {
             "method": "POST",
             "header": [
@@ -116,7 +116,398 @@
       ]
     },
     {
-      "name": "2. Dashboard & Analytics",
+      "name": "2. Subscription Plans Management (SaaS)",
+      "item": [
+        {
+          "name": "List All Subscription Plans (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Subscription Plan (Super Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Custom Agency Tier\",\n  \"monthly_price\": 79.0,\n  \"yearly_price\": 790.0,\n  \"base_user_seats\": 10,\n  \"addon_seat_price\": 5.0,\n  \"modules\": [\n    \"leads\",\n    \"followups\",\n    \"packages\",\n    \"bookings\"\n  ],\n  \"database_type\": \"shared\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription Plan Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plans/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "plans",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Tenant Onboarding & Seat Management (SaaS)",
+      "item": [
+        {
+          "name": "Register Company Subscriber Account (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Sunrise Travel Agency\",\n  \"subdomain\": \"sunrisetravel\",\n  \"plan_id\": 1,\n  \"billing_cycle\": \"monthly\",\n  \"addon_user_seats\": 2,\n  \"database_type\": \"shared\",\n  \"admin_name\": \"Rajesh Kumar\",\n  \"admin_email\": \"admin@sunrisetravel.com\",\n  \"admin_phone\": \"9811122334\",\n  \"initial_password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/tenants",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "tenants"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List All Subscriber Companies (Super Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/tenants?page=1&per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "tenants"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Purchase / Update Add-on User Seats (Super Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addon_user_seats\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/tenants/1/addon-seats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "tenants",
+                "1",
+                "addon-seats"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Roles & Permissions (RBAC)",
+      "item": [
+        {
+          "name": "List All Module Permissions Matrix",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "permissions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Tenant Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Custom Role with Permissions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Senior Sales Specialist\",\n  \"description\": \"Custom role for senior sales reps\",\n  \"permissions\": [\n    1,\n    2,\n    3,\n    5\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Role & Sync Permissions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Senior Sales Specialist\",\n  \"description\": \"Updated description\",\n  \"permissions\": [\n    1,\n    2,\n    3,\n    5,\n    6\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "2"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Users & Staff Management",
+      "item": [
+        {
+          "name": "List Users (Staff Directory)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&per_page=15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Staff User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Amit Verma\",\n  \"email\": \"amit@sunrisetravel.com\",\n  \"phone\": \"9876543210\",\n  \"role_id\": 3,\n  \"password\": \"Password@123\",\n  \"password_confirmation\": \"Password@123\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Dashboard & Reports",
       "item": [
         {
           "name": "Get Dashboard Metrics",
@@ -224,10 +615,10 @@
       ]
     },
     {
-      "name": "3. Lead Management & Webhooks",
+      "name": "7. Lead Management & Webhooks",
       "item": [
         {
-          "name": "List Leads (Paginated & Filtered)",
+          "name": "List Leads",
           "request": {
             "method": "GET",
             "header": [
@@ -241,36 +632,18 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/leads?page=1&per_page=15&search=John&status=new",
+              "raw": "{{baseUrl}}/leads?page=1&per_page=15",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "leads"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "per_page",
-                  "value": "15"
-                },
-                {
-                  "key": "search",
-                  "value": "John"
-                },
-                {
-                  "key": "status",
-                  "value": "new"
-                }
               ]
             }
           }
         },
         {
-          "name": "Create New Lead",
+          "name": "Create Lead",
           "request": {
             "method": "POST",
             "header": [
@@ -289,7 +662,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul.sharma@example.com\",\n  \"phone\": \"9876543210\",\n  \"source_id\": 1,\n  \"destination\": \"Himachal Pradesh\",\n  \"travel_date\": \"2026-09-15\",\n  \"pax_adults\": 2,\n  \"pax_children\": 1,\n  \"budget\": 55000.0,\n  \"status\": \"new\",\n  \"assigned_to\": 1,\n  \"notes\": \"Prefers luxury hotel with mountain view\"\n}"
+              "raw": "{\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul.sharma@example.com\",\n  \"phone\": \"9876543210\",\n  \"source_id\": 1,\n  \"destination\": \"Himachal Pradesh\",\n  \"travel_date\": \"2026-09-15\",\n  \"pax_adults\": 2,\n  \"pax_children\": 1,\n  \"budget\": 55000.0,\n  \"status\": \"new\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/leads",
@@ -322,7 +695,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"assigned_to\": 5\n}"
+              "raw": "{\n  \"assigned_to\": 3\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/leads/1/assign",
@@ -338,7 +711,7 @@
           }
         },
         {
-          "name": "Meta Lead Webhook Ingestion",
+          "name": "Meta Facebook Ads Webhook",
           "request": {
             "method": "POST",
             "header": [
@@ -369,7 +742,7 @@
           }
         },
         {
-          "name": "Website Form Webhook Ingestion",
+          "name": "Website Form Webhook",
           "request": {
             "method": "POST",
             "header": [
@@ -402,7 +775,7 @@
       ]
     },
     {
-      "name": "4. Bookings Management & Handoff",
+      "name": "8. Bookings & Operations",
       "item": [
         {
           "name": "List Bookings",
@@ -419,18 +792,12 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/bookings?status=confirmed",
+              "raw": "{{baseUrl}}/bookings",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "bookings"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "confirmed"
-                }
               ]
             }
           }
@@ -455,7 +822,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"operations_id\": 8\n}"
+              "raw": "{\n  \"operations_id\": 4\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/bookings/1/assign-operations",
@@ -473,8 +840,33 @@
       ]
     },
     {
-      "name": "5. Payments Management",
+      "name": "9. Finance (Invoices, Payments, Expenses)",
       "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invoices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          }
+        },
         {
           "name": "Record Payment",
           "request": {
@@ -495,7 +887,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"booking_id\": 1,\n  \"amount\": 25000.0,\n  \"payment_type\": \"advance\",\n  \"payment_mode\": \"upi\",\n  \"txn_reference\": \"TXN987654321\",\n  \"paid_at\": \"2026-08-18 12:00:00\"\n}"
+              "raw": "{\n  \"booking_id\": 1,\n  \"amount\": 30000.0,\n  \"payment_type\": \"advance\",\n  \"payment_mode\": \"upi\",\n  \"txn_reference\": \"TXN99887766\",\n  \"paid_at\": \"2026-08-25 12:00:00\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payments",
@@ -504,6 +896,161 @@
               ],
               "path": [
                 "payments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Expenses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "expenses"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Inventory (Hotels, Resorts, Villas, Packages, Cabs)",
+      "item": [
+        {
+          "name": "List Tour Packages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/packages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "packages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Hotels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hotels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hotels"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Resorts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/resorts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "resorts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Villas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/villas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "villas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Cab Vendors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vendors"
               ]
             }
           }

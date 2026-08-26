@@ -21,10 +21,8 @@ class RoleController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        return $this->paginatedResponse(
-            $this->service->getPaginated((int) $request->input('per_page', 15), ['permissions'], $request->only(['search'])),
-            'Roles retrieved successfully'
-        );
+        $roles = Role::with(['permissions'])->paginate((int) $request->input('per_page', 15));
+        return $this->paginatedResponse($roles, 'Roles retrieved successfully');
     }
 
     public function store(Request $request): JsonResponse
