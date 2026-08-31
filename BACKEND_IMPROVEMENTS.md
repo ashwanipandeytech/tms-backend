@@ -20,7 +20,6 @@ This document tracks current issues, missing endpoints, and feature requests blo
   - Subscription details (especially if about to expire)
   - Registration date (to identify newly added companies)
   - Total number of employees (`users` count)
-  - Total number of custom `roles` created
 - [ ] **Exclude Super Admin from Roles List (`GET /api/v1/roles`)**: When fetching the list of roles, the backend should filter out and hide the "Super Admin" role from the response. The Super Admin is the owner of the CRM and this role should not be editable, assignable to regular staff, or visible in the standard roles list.
 - [ ] **Hide Super Admin from User List (`GET /api/v1/users`)**: When returning the list of staff users, if the currently authenticated user is *not* a Super Admin, the backend must filter out the Super Admin account from the response. This prevents regular staff members from seeing or attempting to modify the owner's account.
 - [ ] **Create Bulk Clear API (e.g. `DELETE /api/v1/admin/reset`)**: The frontend team requires a new endpoint to clear/reset tenant data. This API should bulk delete all staff `users` and custom `roles` associated with the tenant, **strictly excluding the main Super Admin account and its default role** so the tenant owner doesn't lose access.
