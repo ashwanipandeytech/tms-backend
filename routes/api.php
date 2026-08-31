@@ -51,7 +51,9 @@ Route::prefix('v1')->group(function () {
         // Super Admin Management Endpoints
         Route::apiResource('plans', SubscriptionPlanController::class)->except(['index']);
         Route::get('admin/tenants', [TenantAdminController::class, 'index']);
+        Route::get('admin/companies', [TenantAdminController::class, 'companies']);
         Route::put('admin/tenants/{id}/addon-seats', [TenantAdminController::class, 'updateAddonSeats']);
+        Route::delete('admin/reset', [TenantAdminController::class, 'resetTenantData']);
 
         // Reports
         Route::prefix('reports')->group(function () {

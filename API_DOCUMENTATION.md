@@ -6,30 +6,27 @@
 
 ---
 
-## 1. Authentication
+## 1. Authentication & Session
 
 ### 1.1 User Login (`POST /api/v1/login`)
 - **URL**: `{{baseUrl}}/login`
 - **Method**: `POST`
 - **Authentication**: Public
+- **Note**: `role_type` parameter is **optional**. The backend automatically detects the user's role and company context based on credentials.
+
+#### Headers
+| Header | Type | Description |
+|---|---|---|
+| Content-Type | String | Required. `application/json` |
+| Accept | String | Required. `application/json` |
 
 #### Request Body Payload
 ```json
 {
   "email": "travel@demohandler.in",
-  "password": "Admin@123",
-  "role_type": "Super Admin"
+  "password": "Admin@123"
 }
 ```
-
-#### Pre-seeded Staging Credentials for Testing
-| Role Name | Email Address | Password | Role ID |
-|---|---|---|---|
-| Super Admin | `travel@demohandler.in` | `Admin@123` | 1 |
-| Manager | `manager@demohandler.in` | `Manager@123` | 2 |
-| Sales Executive | `sales@demohandler.in` | `Sales@123` | 3 |
-| Operation Team | `ops@demohandler.in` | `Ops@123` | 4 |
-| Accounts | `accounts@demohandler.in` | `Accounts@123` | 5 |
 
 #### Success Response (200 OK)
 ```json
@@ -41,7 +38,9 @@
       "id": 1,
       "name": "Super Admin",
       "email": "travel@demohandler.in",
+      "phone": "9999999999",
       "company_id": 1,
+      "company_name": "Safar Musafir CRM",
       "role": {
         "id": 1,
         "name": "Super Admin",
@@ -55,24 +54,45 @@
         "total_allowed_seats": 999
       }
     },
-    "token": "1|sanctum_bearer_token_string"
+    "token": "1|sanctum_bearer_token_string_here"
   }
 }
 ```
 
 ---
 
-### 1.2 Get Logged-In User Profile (`GET /api/v1/me`)
+### 1.2 Get Current User Details (`GET /api/v1/me`)
 - **URL**: `{{baseUrl}}/me`
 - **Method**: `GET`
 - **Headers**: `Authorization: Bearer <token>`
 
----
-
-### 1.3 Logout (`POST /api/v1/logout`)
-- **URL**: `{{baseUrl}}/logout`
-- **Method**: `POST`
-- **Headers**: `Authorization: Bearer <token>`
+#### Success Response (200 OK)
+```json
+{
+  "success": true,
+  "message": "Current user details",
+  "data": {
+    "id": 1,
+    "company_id": 1,
+    "company_name": "Safar Musafir CRM",
+    "name": "Super Admin",
+    "email": "travel@demohandler.in",
+    "phone": "9999999999",
+    "role": {
+      "id": 1,
+      "name": "Super Admin",
+      "permissions": ["leads.view", "leads.create", "bookings.view"]
+    },
+    "company": {
+      "id": 1,
+      "name": "Safar Musafir CRM",
+      "subdomain": "safarmusafir",
+      "subscription_status": "active",
+      "total_allowed_seats": 999
+    }
+  }
+}
+```
 
 ---
 
@@ -82,109 +102,66 @@
 - **URL**: `{{baseUrl}}/plans`
 - **Method**: `GET`
 - **Authentication**: **Public & Optional Bearer Token**
-  - *Public Call*: Returns all active subscription plans.
-  - *Authenticated Call* (`Authorization: Bearer <token>`): Includes `"is_current_plan": true` on the active plan.
-
-#### Response Structure (200 OK)
-```json
-{
-  "success": true,
-  "message": "Subscription plans retrieved successfully",
-  "data": [
-    {
-      "id": 1,
-      "name": "Free Trial Plan",
-      "slug": "free-trial-plan",
-      "monthly_price": "0.00",
-      "yearly_price": "0.00",
-      "base_user_seats": 1,
-      "addon_seat_price": "0.00",
-      "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
-      "database_type": "shared",
-      "status": "active",
-      "is_current_plan": true
-    },
-    {
-      "id": 2,
-      "name": "Starter Plan",
-      "slug": "starter-plan",
-      "monthly_price": "49.00",
-      "yearly_price": "490.00",
-      "base_user_seats": 5,
-      "addon_seat_price": "5.00",
-      "modules": ["leads", "followups", "bookings"],
-      "database_type": "shared",
-      "status": "active",
-      "is_current_plan": false
-    },
-    {
-      "id": 3,
-      "name": "Professional Plan",
-      "slug": "professional-plan",
-      "monthly_price": "99.00",
-      "yearly_price": "990.00",
-      "base_user_seats": 15,
-      "addon_seat_price": "5.00",
-      "modules": ["leads", "followups", "packages", "inventory", "bookings"],
-      "database_type": "shared",
-      "status": "active",
-      "is_current_plan": false
-    },
-    {
-      "id": 4,
-      "name": "Enterprise Plan",
-      "slug": "enterprise-plan",
-      "monthly_price": "249.00",
-      "yearly_price": "2490.00",
-      "base_user_seats": 999,
-      "addon_seat_price": "0.00",
-      "modules": ["leads", "followups", "packages", "inventory", "bookings", "finance", "reports"],
-      "database_type": "dedicated",
-      "status": "active",
-      "is_current_plan": false
-    }
-  ]
-}
-```
 
 ---
 
-### 2.2 Create Subscription Plan (`POST /api/v1/plans`)
-- **URL**: `{{baseUrl}}/plans`
-- **Method**: `POST`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
-
----
-
-## 3. Tenant Onboarding & Seat Management (SaaS)
+## 3. Tenant Onboarding & Super Admin Management APIs (`/api/v1/admin/*`)
 
 ### 3.1 Register Company Subscriber Account (`POST /api/v1/admin/tenants`)
 - **URL**: `{{baseUrl}}/admin/tenants`
 - **Method**: `POST`
 - **Authentication**: **Public & Optional Bearer Token**
 
-#### Request Payload
-```json
-{
-  "company_name": "Sunrise Travel Agency",
-  "subdomain": "sunrisetravel",
-  "plan_id": 1,
-  "billing_cycle": "monthly",
-  "addon_user_seats": 2,
-  "database_type": "shared",
-  "admin_name": "Rajesh Kumar",
-  "admin_email": "admin@sunrisetravel.com",
-  "admin_phone": "9811122334",
-  "initial_password": "Password@123"
-}
-```
-
 ---
 
-### 3.2 List All Subscribers (`GET /api/v1/admin/tenants`)
-- **URL**: `{{baseUrl}}/admin/tenants?page=1&per_page=15`
+### 3.2 List All Registered Companies & Statistics (`GET /api/v1/admin/companies`) `[NEW]`
+Super Admin dashboard list returning company statistics, subscription status, days until expiration, total employee counts, and nested staff details.
+
+- **URL**: `{{baseUrl}}/admin/companies?page=1&per_page=15`
 - **Method**: `GET`
 - **Headers**: `Authorization: Bearer <super_admin_token>`
+
+#### Success Response (200 OK)
+```json
+{
+  "success": true,
+  "message": "Company subscribers and statistics retrieved successfully",
+  "data": [
+    {
+      "id": 105,
+      "company_name": "Sunrise Travel Agency",
+      "subdomain": "sunrisetravel",
+      "status": "active",
+      "created_at": "2026-08-25T12:00:00Z",
+      "subscription": {
+        "plan_name": "Starter Plan",
+        "status": "active",
+        "starts_at": "2026-08-25T12:00:00Z",
+        "ends_at": "2026-09-25T12:00:00Z",
+        "days_remaining": 31,
+        "is_expiring_soon": false
+      },
+      "total_employees": 3,
+      "total_allowed_seats": 5,
+      "employees": [
+        {
+          "id": 42,
+          "name": "Rajesh Kumar",
+          "email": "admin@sunrisetravel.com",
+          "status": "active",
+          "role_name": "Manager"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 1
+  }
+}
+```
 
 ---
 
@@ -193,9 +170,25 @@
 - **Method**: `PUT`
 - **Headers**: `Authorization: Bearer <super_admin_token>`
 
+---
+
+### 3.4 Bulk Clear / Reset Tenant Data (`DELETE /api/v1/admin/reset`) `[NEW]`
+Clears/resets tenant test data (leads, bookings, packages, inventory, custom roles, staff) while **strictly preserving the primary Super Admin account**.
+
+- **URL**: `{{baseUrl}}/admin/reset`
+- **Method**: `DELETE`
+- **Headers**: `Authorization: Bearer <token>`
+
+#### Success Response (200 OK)
 ```json
 {
-  "addon_user_seats": 5
+  "success": true,
+  "message": "Tenant data reset successfully. Super Admin account preserved.",
+  "data": {
+    "company_id": 105,
+    "preserved_admin": "admin@sunrisetravel.com",
+    "status": "reset_completed"
+  }
 }
 ```
 
@@ -214,193 +207,21 @@
 - **URL**: `{{baseUrl}}/roles`
 - **Method**: `GET`
 - **Headers**: `Authorization: Bearer <token>`
+- **Note**: The `Super Admin` role is automatically filtered out from this list so it cannot be modified or assigned to staff users.
 
 ---
 
-### 4.3 Create Custom Role with Permissions (`POST /api/v1/roles`)
-- **URL**: `{{baseUrl}}/roles`
-- **Method**: `POST`
-- **Headers**: `Authorization: Bearer <token>`
-
-```json
-{
-  "name": "Senior Sales Specialist",
-  "description": "Custom role for senior sales reps",
-  "permissions": [1, 2, 3, 5]
-}
-```
-
----
-
-### 4.4 Update Role & Sync Permissions (`PUT /api/v1/roles/{id}`)
-- **URL**: `{{baseUrl}}/roles/{id}`
-- **Method**: `PUT`
-- **Headers**: `Authorization: Bearer <token>`
-
----
-
-## 5. Staff & User Management (CRUD)
+## 5. Staff & User Management
 
 ### 5.1 List Users (`GET /api/v1/users`)
 - **URL**: `{{baseUrl}}/users?page=1&per_page=15`
 - **Method**: `GET`
 - **Headers**: `Authorization: Bearer <token>`
+- **Note**: Super Admin user accounts are automatically hidden from regular non-SuperAdmin callers.
 
 ---
 
-### 5.2 Add Staff User (`POST /api/v1/users`)
-- **URL**: `{{baseUrl}}/users`
-- **Method**: `POST`
-- **Headers**: `Authorization: Bearer <token>`
-
-```json
-{
-  "name": "Amit Verma",
-  "email": "amit@sunrisetravel.com",
-  "phone": "9876543210",
-  "role_id": 3,
-  "password": "Password@123",
-  "password_confirmation": "Password@123",
-  "status": "active"
-}
-```
-
----
-
-## 6. Lead Management & Webhooks
-
-### 6.1 List Leads (`GET /api/v1/leads`)
-- **URL**: `{{baseUrl}}/leads?page=1&per_page=15&search=John&status=new`
-- **Method**: `GET`
-- **Headers**: `Authorization: Bearer <token>`
-
----
-
-### 6.2 Create Lead (`POST /api/v1/leads`)
-- **URL**: `{{baseUrl}}/leads`
-- **Method**: `POST`
-- **Headers**: `Authorization: Bearer <token>`
-
-```json
-{
-  "name": "Rahul Sharma",
-  "email": "rahul.sharma@example.com",
-  "phone": "9876543210",
-  "source_id": 1,
-  "destination": "Himachal Pradesh",
-  "travel_date": "2026-09-15",
-  "pax_adults": 2,
-  "pax_children": 1,
-  "budget": 55000.00,
-  "status": "new"
-}
-```
-
----
-
-### 6.3 Assign Lead to Sales Executive (`PUT /api/v1/leads/{id}/assign`)
-- **URL**: `{{baseUrl}}/leads/{id}/assign`
-- **Method**: `PUT`
-- **Headers**: `Authorization: Bearer <token>`
-
-```json
-{
-  "assigned_to": 3
-}
-```
-
----
-
-### 6.4 Lead Webhook Ingestion
-- **Meta Facebook Ads**: `POST {{baseUrl}}/webhooks/leads/meta`
-- **Website Form**: `POST {{baseUrl}}/webhooks/leads/website`
-
----
-
-## 7. Follow-ups Management
-
-- **List Follow-ups**: `GET {{baseUrl}}/follow-ups`
-- **Create Follow-up**: `POST {{baseUrl}}/follow-ups`
-
----
-
-## 8. Tour Packages & Itineraries
-
-- **List Packages**: `GET {{baseUrl}}/packages`
-- **Create Package**: `POST {{baseUrl}}/packages`
-
----
-
-## 9. Inventory Management
-
-- **Hotels**: `GET {{baseUrl}}/hotels` | `POST {{baseUrl}}/hotels`
-- **Resorts**: `GET {{baseUrl}}/resorts` | `POST {{baseUrl}}/resorts`
-- **Villas**: `GET {{baseUrl}}/villas` | `POST {{baseUrl}}/villas`
-
----
-
-## 10. Cabs & Vendors Management
-
-- **Cab Vendors**: `GET {{baseUrl}}/vendors` | `POST {{baseUrl}}/vendors`
-- **Vehicles**: `GET {{baseUrl}}/vehicles` | `POST {{baseUrl}}/vehicles`
-- **Cab Bookings**: `GET {{baseUrl}}/cab-bookings` | `POST {{baseUrl}}/cab-bookings`
-
----
-
-## 11. Bookings Management & Operations Handoff
-
-### 11.1 List Bookings (`GET /api/v1/bookings`)
-- **URL**: `{{baseUrl}}/bookings?status=confirmed`
-- **Method**: `GET`
-- **Headers**: `Authorization: Bearer <token>`
-
----
-
-### 11.2 Assign Operations Staff (`PUT /api/v1/bookings/{id}/assign-operations`)
-- **URL**: `{{baseUrl}}/bookings/{id}/assign-operations`
-- **Method**: `PUT`
-- **Headers**: `Authorization: Bearer <token>`
-
-```json
-{
-  "operations_id": 4
-}
-```
-
----
-
-## 12. Quotation Management
-
-- **List Quotations**: `GET {{baseUrl}}/quotations`
-- **Create Quotation**: `POST {{baseUrl}}/quotations`
-
----
-
-## 13. Finance Management (Invoices, Payments, Expenses)
-
-- **List Invoices**: `GET {{baseUrl}}/invoices` | `POST {{baseUrl}}/invoices`
-- **Record Payment**: `POST {{baseUrl}}/payments`
-- **Expenses**: `GET {{baseUrl}}/expenses` | `POST {{baseUrl}}/expenses`
-
----
-
-## 14. Customer Directory
-
-- **List Customers**: `GET {{baseUrl}}/customers`
-- **Create Customer**: `POST {{baseUrl}}/customers`
-
----
-
-## 15. Reports & Dashboard Metrics
-
-- **Get Dashboard Metrics**: `GET {{baseUrl}}/dashboard`
-- **Leads by Source Report**: `GET {{baseUrl}}/reports/leads-by-source`
-- **Sales by Staff Report**: `GET {{baseUrl}}/reports/sales-by-staff`
-- **Monthly Revenue Report**: `GET {{baseUrl}}/reports/monthly-revenue`
-
----
-
-## 16. Error Codes & HTTP Status Reference
+## 6. Global Error Codes Reference
 
 | Error Code | HTTP Status | Detail Description |
 |---|---|---|

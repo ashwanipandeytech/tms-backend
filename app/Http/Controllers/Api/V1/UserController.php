@@ -23,12 +23,28 @@ class UserController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $paginator = $this->service->getPaginated(
-            perPage: (int) $request->input('per_page', 15),
-            columns: ['*'],
-            relations: ['role', 'company'],
-            filters: $request->only(['search', 'status'])
-        );
+        $currentUser = $request->user();
+
+        $query = User::with(['role.permissions', 'company']);
+
+        // Hide Super Admin accounts (role_id 1) if authenticated user is not a Super Admin
+        if (!$currentUser || !$currentUser->isSuperAdmin()) {
+            $query->where('role_id', '!=', 1);
+        }
+
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        $paginator = $query->latest()->paginate((int) $request->input('per_page', 15));
 
         return $this->paginatedResponse($paginator, 'Users retrieved successfully', UserResource::class);
     }
@@ -66,12 +82,12 @@ class UserController extends BaseApiController
         $data['status'] = $data['status'] ?? 'active';
 
         $user = $this->service->create($data);
-        return $this->createdResponse(new UserResource($user->load('role')), 'User created successfully');
+        return $this->createdResponse(new UserResource($user->load('role.permissions')), 'User created successfully');
     }
 
     public function show(int|string $id): JsonResponse
     {
-        $user = $this->service->getById($id, ['role', 'company']);
+        $user = $this->service->getById($id, ['role.permissions', 'company']);
         return $this->successResponse(new UserResource($user), 'User details retrieved');
     }
 
@@ -93,7 +109,7 @@ class UserController extends BaseApiController
         }
 
         $user = $this->service->update($id, $data);
-        return $this->successResponse(new UserResource($user->load('role')), 'User updated successfully');
+        return $this->successResponse(new UserResource($user->load('role.permissions')), 'User updated successfully');
     }
 
     public function destroy(int|string $id): JsonResponse

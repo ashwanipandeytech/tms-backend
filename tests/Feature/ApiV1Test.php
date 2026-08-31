@@ -358,4 +358,46 @@ class ApiV1Test extends TestCase
         $createUserResponse->assertStatus(201)
                            ->assertJsonPath('data.role.id', $roleId);
     }
+
+    public function test_super_admin_companies_list_and_filters(): void
+    {
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $this->actingAs($admin, 'sanctum');
+
+        $response = $this->getJson('/api/v1/admin/companies');
+        $response->assertStatus(200)
+                 ->assertJson(['success' => true])
+                 ->assertJsonStructure([
+                     'data' => [
+                         '*' => [
+                             'id',
+                             'company_name',
+                             'status',
+                             'subscription' => ['plan_name', 'status', 'days_remaining'],
+                             'total_employees',
+                             'employees',
+                         ]
+                     ]
+                 ]);
+    }
+
+    public function test_super_admin_role_and_user_hiding_and_tenant_reset(): void
+    {
+        $admin = User::where('email', 'travel@demohandler.in')->first();
+        $this->actingAs($admin, 'sanctum');
+
+        // Test Roles list hides Super Admin role
+        $rolesResponse = $this->getJson('/api/v1/roles');
+        $rolesResponse->assertStatus(200);
+        $roleNames = collect($rolesResponse->json('data'))->pluck('name')->toArray();
+        $this->assertNotContains('Super Admin', $roleNames);
+
+        // Test Tenant Reset API clears test data
+        $resetResponse = $this->deleteJson('/api/v1/admin/reset');
+        $resetResponse->assertStatus(200)
+                      ->assertJsonPath('data.status', 'reset_completed');
+
+        // Verify Super Admin account still exists
+        $this->assertDatabaseHas('users', ['email' => 'travel@demohandler.in']);
+    }
 }

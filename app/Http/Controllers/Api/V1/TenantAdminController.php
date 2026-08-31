@@ -23,11 +23,52 @@ class TenantAdminController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $companies = Company::with(['subscriptionPlan', 'users'])
+        return $this->companies($request);
+    }
+
+    /**
+     * List all Subscriber Companies with aggregated statistics for Super Admin dashboard.
+     */
+    public function companies(Request $request): JsonResponse
+    {
+        $paginated = Company::with(['subscriptionPlan', 'users.role'])
             ->latest()
             ->paginate((int) $request->input('per_page', 15));
 
-        return $this->paginatedResponse($companies, 'Company subscribers retrieved successfully');
+        $paginated->getCollection()->transform(function ($company) {
+            $users = $company->users->map(fn($user) => [
+                'id'        => $user->id,
+                'name'      => $user->name,
+                'email'     => $user->email,
+                'status'    => $user->status?->value ?? $user->status,
+                'role_name' => $user->role?->name ?? 'Staff',
+            ]);
+
+            $daysRemaining = $company->subscription_ends_at
+                ? max(0, (int) now()->diffInDays($company->subscription_ends_at, false))
+                : null;
+
+            return [
+                'id'                  => $company->id,
+                'company_name'        => $company->name,
+                'subdomain'           => $company->subdomain,
+                'status'              => $company->subscription_status?->value ?? $company->subscription_status,
+                'created_at'          => $company->created_at?->toIso8601String(),
+                'subscription'        => [
+                    'plan_name'        => $company->subscriptionPlan?->name ?? 'N/A',
+                    'status'           => $company->subscription_status?->value ?? $company->subscription_status,
+                    'starts_at'        => $company->subscription_starts_at?->toIso8601String(),
+                    'ends_at'          => $company->subscription_ends_at?->toIso8601String(),
+                    'days_remaining'   => $daysRemaining,
+                    'is_expiring_soon' => $daysRemaining !== null && $daysRemaining <= 7,
+                ],
+                'total_employees'     => $company->users->count(),
+                'total_allowed_seats' => $company->total_allowed_seats,
+                'employees'           => $users,
+            ];
+        });
+
+        return $this->paginatedResponse($paginated, 'Company subscribers and statistics retrieved successfully');
     }
 
     /**
@@ -142,5 +183,73 @@ class TenantAdminController extends BaseApiController
             'addon_user_seats'    => $company->addon_user_seats,
             'total_allowed_seats' => $company->total_allowed_seats,
         ], 'Add-on user seats updated successfully');
+    }
+
+    /**
+     * Bulk Reset/Clear Tenant Data (excluding main Super Admin account).
+     */
+    public function resetTenantData(Request $request): JsonResponse
+    {
+        $currentUser = $request->user();
+
+        if (!$currentUser) {
+            return $this->errorResponse('Unauthenticated', 401);
+        }
+
+        $companyId = $currentUser->company_id;
+
+        return DB::transaction(function () use ($currentUser, $companyId) {
+            // Delete staff users except current user and Super Admin (role_id 1)
+            $usersQuery = User::query();
+            if ($companyId) {
+                $usersQuery->where('company_id', $companyId);
+            }
+            $usersQuery->where('id', '!=', $currentUser->id)
+                ->where('role_id', '!=', 1)
+                ->delete();
+
+            // Delete custom tenant roles except system default roles
+            $rolesQuery = Role::query();
+            if ($companyId) {
+                $rolesQuery->where('company_id', $companyId);
+            }
+            $rolesQuery->whereNotIn('name', ['Super Admin', 'Manager', 'Sales Executive', 'Operation Team', 'Accounts'])
+                ->delete();
+
+            // Clear tenant resource tables
+            $tables = [
+                \App\Models\Lead::class,
+                \App\Models\FollowUp::class,
+                \App\Models\Booking::class,
+                \App\Models\Quotation::class,
+                \App\Models\Package::class,
+                \App\Models\Hotel::class,
+                \App\Models\Resort::class,
+                \App\Models\Villa::class,
+                \App\Models\Vendor::class,
+                \App\Models\Vehicle::class,
+                \App\Models\CabBooking::class,
+                \App\Models\Invoice::class,
+                \App\Models\Payment::class,
+                \App\Models\Expense::class,
+                \App\Models\Customer::class,
+            ];
+
+            foreach ($tables as $modelClass) {
+                if (class_exists($modelClass)) {
+                    $q = $modelClass::query();
+                    if ($companyId) {
+                        $q->where('company_id', $companyId);
+                    }
+                    $q->delete();
+                }
+            }
+
+            return $this->successResponse([
+                'company_id'      => $companyId,
+                'preserved_admin' => $currentUser->email,
+                'status'          => 'reset_completed',
+            ], 'Tenant data reset successfully. Super Admin account preserved.');
+        });
     }
 }

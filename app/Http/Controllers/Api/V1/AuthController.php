@@ -38,7 +38,7 @@ class AuthController extends BaseApiController
     public function me(Request $request): JsonResponse
     {
         return $this->successResponse(
-            new UserResource($request->user()->load('role', 'company')),
+            new UserResource($request->user()->load(['role.permissions', 'company'])),
             'Current user details'
         );
     }
