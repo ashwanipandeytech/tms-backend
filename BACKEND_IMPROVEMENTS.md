@@ -40,7 +40,12 @@ This document tracks current issues, missing endpoints, and feature requests blo
 - **Header**: `X-Tenant-ID: 105`
 - **CORS**: `config/cors.php` configured to allow `X-Tenant-ID` header.
 - **Effect**: Scopes all model queries (`BelongsToTenantTrait` & `TenantScopedTrait`) and creation logic to `company_id = 105`.
+- **Consideration in other REST APIs**: The backend must ensure that the `X-Tenant-ID` header is consistently respected across **all** tenant-specific REST APIs (e.g., leads, bookings, packages, customers, users) so that the Super Admin experiences a completely isolated workspace when a tenant is selected.
 
-### 4. User Creator Tracking (`created_by` & `created_by_type`)
+### 4. Global Resources & X-Tenant Exclusions
+- **Universal Models**: `Roles` and `Permissions` must be treated as global/universal resources. They must **not** be scoped by `company_id` and must be shared across all tenants.
+- **API Exclusions**: Endpoints for global resources (e.g., `GET /api/v1/roles`, `GET /api/v1/permissions`, and `GET /api/v1/admin/companies`) must explicitly **ignore** the `X-Tenant-ID` header. The `TenantScopedTrait` or `BelongsToTenantTrait` should be removed from the `Role` and `Permission` models, or they should be explicitly whitelisted to bypass the tenant scope.
+
+### 5. User Creator Tracking (`created_by` & `created_by_type`)
 - **Columns**: `created_by` (unsigned bigint FK to `users.id`), `created_by_type` (string: `'super_admin'`, `'tenant_admin'`).
 - **Response**: `UserResource` returns `created_by` object containing creator's `id`, `name`, `email`, and `created_by_type`.
