@@ -128,36 +128,22 @@ class TenantAdminController extends BaseApiController
                 'database_type'          => $data['database_type'] ?? $plan->database_type?->value ?? 'shared',
             ]);
 
-            // 2. Seed Default Company Tenant Roles
-            $roles = [
-                ['name' => 'Manager', 'description' => 'Manage company leads, packages, bookings'],
-                ['name' => 'Sales Executive', 'description' => 'Handle assigned leads & quotations'],
-                ['name' => 'Operation Team', 'description' => 'Manage tour fulfillment, cabs, hotels'],
-                ['name' => 'Accounts', 'description' => 'Finance, invoices, payments, expenses'],
-            ];
+            // 2. Assign Primary Tenant Admin Account to Universal Global Manager Role
+            $managerRole = Role::where('name', 'Manager')->first()
+                ?? Role::where('name', 'Super Admin')->first();
 
-            $tenantRoles = [];
-            foreach ($roles as $roleData) {
-                $role = Role::create([
-                    'company_id'  => $company->id,
-                    'name'        => $roleData['name'],
-                    'description' => $roleData['description'],
+            if (!$managerRole) {
+                $managerRole = Role::create([
+                    'company_id'  => null,
+                    'name'        => 'Manager',
+                    'description' => 'Manage company leads, packages, bookings',
                 ]);
-                $tenantRoles[$roleData['name']] = $role;
-            }
-
-            // Grant Manager Role all permissions
-            $allPermissions = Permission::pluck('id')->toArray();
-            if (isset($tenantRoles['Manager'])) {
-                $tenantRoles['Manager']->permissions()->sync($allPermissions);
             }
 
             // 3. Create Primary Tenant Admin Account
-            $tenantAdminRole = Role::where('name', 'Super Admin')->first() ?? $tenantRoles['Manager'];
-
             $adminUser = User::create([
                 'company_id'      => $company->id,
-                'role_id'         => $tenantAdminRole->id,
+                'role_id'         => $managerRole->id,
                 'name'            => $data['admin_name'],
                 'email'           => $data['admin_email'],
                 'phone'           => $data['admin_phone'] ?? null,
