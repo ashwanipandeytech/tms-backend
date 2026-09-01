@@ -357,6 +357,13 @@ class ApiV1Test extends TestCase
         ]);
         $createUserResponse->assertStatus(201)
                            ->assertJsonPath('data.role.id', $roleId);
+
+        // 4. Duplicate Role Name & Plural Variant Rejection Test (e.g. "Managers" when "Manager" exists)
+        $duplicateResponse = $this->postJson('/api/v1/roles', [
+            'name' => 'Managers',
+        ]);
+        $duplicateResponse->assertStatus(422)
+                         ->assertJsonPath('error_code', 'DUPLICATE_ROLE_NAME');
     }
 
     public function test_super_admin_companies_list_and_filters(): void

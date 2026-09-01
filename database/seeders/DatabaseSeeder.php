@@ -88,11 +88,36 @@ class DatabaseSeeder extends Seeder
             DB::table('roles')->updateOrInsert(['id' => $role['id']], $role);
         }
 
-        // Give Super Admin all permissions
+        // Give Super Admin & Manager ALL permissions
         $allPermissions = DB::table('permissions')->pluck('id');
         foreach ($allPermissions as $permId) {
             DB::table('role_permissions')->updateOrInsert(['role_id' => 1, 'permission_id' => $permId]);
-            DB::table('role_permissions')->updateOrInsert(['role_id' => 2, 'permission_id' => $permId]); // Manager gets all too
+            DB::table('role_permissions')->updateOrInsert(['role_id' => 2, 'permission_id' => $permId]);
+        }
+
+        // Sales Executive permissions: leads, followups, quotations, bookings, customers, packages, dashboard
+        $salesPermIds = DB::table('permissions')
+            ->whereIn('module', ['leads', 'followups', 'quotations', 'bookings', 'customers', 'packages', 'dashboard'])
+            ->pluck('id');
+        foreach ($salesPermIds as $permId) {
+            DB::table('role_permissions')->updateOrInsert(['role_id' => 3, 'permission_id' => $permId]);
+        }
+
+        // Operation Team permissions: bookings, cabs, hotels, resorts, villas, packages, dashboard
+        $opsPermIds = DB::table('permissions')
+            ->whereIn('module', ['bookings', 'cabs', 'hotels', 'resorts', 'villas', 'packages', 'dashboard'])
+            ->pluck('id');
+        foreach ($opsPermIds as $permId) {
+            DB::table('role_permissions')->updateOrInsert(['role_id' => 4, 'permission_id' => $permId]);
+        }
+
+        // Accounts permissions: payments, invoices, expenses, reports, dashboard, bookings (view/export)
+        $accountsPermIds = DB::table('permissions')
+            ->whereIn('module', ['payments', 'invoices', 'expenses', 'reports', 'dashboard'])
+            ->orWhere(fn($q) => $q->where('module', 'bookings')->whereIn('action', ['view', 'export']))
+            ->pluck('id');
+        foreach ($accountsPermIds as $permId) {
+            DB::table('role_permissions')->updateOrInsert(['role_id' => 5, 'permission_id' => $permId]);
         }
 
         // 5. Users

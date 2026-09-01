@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Services\RoleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class RoleController extends BaseApiController
 {
@@ -45,6 +46,15 @@ class RoleController extends BaseApiController
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        if ($matchedExisting = $this->checkDuplicateRoleName($data['name'])) {
+            return $this->errorResponse(
+                "Role '{$data['name']}' cannot be created because a conflicting role or plural variant ('{$matchedExisting}') already exists.",
+                422,
+                ['name' => ["Role name or plural variant ('{$matchedExisting}') already exists."]],
+                'DUPLICATE_ROLE_NAME'
+            );
+        }
+
         $role = $this->service->create([
             'company_id'  => null,
             'name'        => $data['name'],
@@ -79,6 +89,15 @@ class RoleController extends BaseApiController
             'permissions.*' => 'exists:permissions,id',
         ]);
 
+        if (!empty($data['name']) && ($matchedExisting = $this->checkDuplicateRoleName($data['name'], (int) $id))) {
+            return $this->errorResponse(
+                "Role '{$data['name']}' cannot be saved because a conflicting role or plural variant ('{$matchedExisting}') already exists.",
+                422,
+                ['name' => ["Role name or plural variant ('{$matchedExisting}') already exists."]],
+                'DUPLICATE_ROLE_NAME'
+            );
+        }
+
         $role->update($data);
 
         if (array_key_exists('permissions', $data)) {
@@ -96,5 +115,37 @@ class RoleController extends BaseApiController
 
         $this->service->delete($id);
         return $this->successResponse(null, 'Role deleted successfully');
+    }
+
+    /**
+     * Check if a role with the same name or its singular/plural variant already exists.
+     */
+    protected function checkDuplicateRoleName(string $name, ?int $ignoreId = null): ?string
+    {
+        $inputTrimmed = strtolower(trim($name));
+        $inputSingular = Str::singular($inputTrimmed);
+        $inputPlural = Str::plural($inputTrimmed);
+
+        $existingRoles = Role::query()
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->get(['id', 'name']);
+
+        foreach ($existingRoles as $role) {
+            $existingTrimmed = strtolower(trim($role->name));
+            $existingSingular = Str::singular($existingTrimmed);
+            $existingPlural = Str::plural($existingTrimmed);
+
+            if (
+                $existingTrimmed === $inputTrimmed ||
+                $existingSingular === $inputSingular ||
+                $existingPlural === $inputPlural ||
+                $existingSingular === $inputTrimmed ||
+                $existingPlural === $inputTrimmed
+            ) {
+                return $role->name;
+            }
+        }
+
+        return null;
     }
 }

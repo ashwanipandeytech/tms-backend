@@ -115,7 +115,29 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-## 3. Super Admin Tenant Workspace Switching (`X-Tenant-ID` Header) `[UPDATED]`
+## 3. Universal Roles & Duplicate Name Rejection (`POST /api/v1/roles`, `PUT /api/v1/roles/{id}`) `[UPDATED]`
+
+- **Global Availability**: Roles and Permissions are universal and shared across all tenants.
+- **Super Admin Only**: Creating, updating, or deleting roles (`POST /api/v1/roles`, `PUT /api/v1/roles/{id}`, `DELETE /api/v1/roles/{id}`) is strictly restricted to Super Admin.
+- **Duplicate & Plural Variant Protection**: Role names are normalized to check for exact and singular/plural variations. For example, if a role named `"Manager"` exists, attempting to create `"Managers"`, `"manager"`, or `"MANAGERS"` returns HTTP `422 Unprocessable Entity` with error code `DUPLICATE_ROLE_NAME`.
+
+### Duplicate Error Response (422 Unprocessable Entity)
+```json
+{
+  "success": false,
+  "message": "Role 'Managers' cannot be created because a conflicting role or plural variant ('Manager') already exists.",
+  "errors": {
+    "name": [
+      "Role name or plural variant ('Manager') already exists."
+    ]
+  },
+  "error_code": "DUPLICATE_ROLE_NAME"
+}
+```
+
+---
+
+## 4. Super Admin Tenant Workspace Switching (`X-Tenant-ID` Header) `[UPDATED]`
 
 When a Super Admin selects a specific tenant from the `/select-tenant` panel, the frontend should attach an **`X-Tenant-ID`** HTTP header to all outgoing API requests.
 
@@ -128,14 +150,6 @@ X-Tenant-ID: 105
 ### Effect on Backend & Global Exclusions
 - **Tenant-Specific APIs** (`/leads`, `/bookings`, `/packages`, `/inventory`, `/finance`, `/users`): Scopes all queries and creations to `company_id = 105`.
 - **Global Resource APIs** (`/roles`, `/permissions`, `/plans`, `/admin/companies`): Explicitly **ignore** the `X-Tenant-ID` header and return global platform resources.
-
----
-
-## 4. Universal Roles & Permissions Management `[UPDATED]`
-
-- **Global Availability**: Roles and Permissions are universal and shared across all tenants.
-- **Super Admin Only**: Creating, updating, or deleting roles (`POST /api/v1/roles`, `PUT /api/v1/roles/{id}`, `DELETE /api/v1/roles/{id}`) is strictly restricted to Super Admin. Non-SuperAdmin requests return `403 Forbidden` (`FORBIDDEN`).
-- **Reset Preservation**: Performing tenant resets (`DELETE /api/v1/admin/reset`) **never** deletes or modifies roles or permissions.
 
 ---
 
