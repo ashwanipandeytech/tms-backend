@@ -52,10 +52,54 @@ class DatabaseSeeder extends Seeder
         }
 
         $companies = [
-            ['id' => 1, 'name' => 'Radhey Shyam Travels', 'subdomain' => 'radheyshyam', 'plan_id' => 4, 'subscription_status' => 'active'],
-            ['id' => 2, 'name' => 'Sunrise Travel Agency', 'subdomain' => 'sunrisetravel-demo', 'plan_id' => 3, 'subscription_status' => 'active'],
-            ['id' => 3, 'name' => 'Wanderlust Adventures', 'subdomain' => 'wanderlust', 'plan_id' => 2, 'subscription_status' => 'active'],
-            ['id' => 4, 'name' => 'Budget Tours India', 'subdomain' => 'budgettours', 'plan_id' => 1, 'subscription_status' => 'active'],
+            [
+                'id'                     => 1,
+                'name'                   => 'Radhey Shyam Travels',
+                'subdomain'              => 'radheyshyam',
+                'plan_id'                => 4,
+                'subscription_status'    => 'active',
+                'billing_cycle'          => 'yearly',
+                'subscription_starts_at' => $now->toDateTimeString(),
+                'subscription_ends_at'   => $now->copy()->addYear()->toDateTimeString(),
+                'created_at'             => $now->toDateTimeString(),
+                'updated_at'             => $now->toDateTimeString(),
+            ],
+            [
+                'id'                     => 2,
+                'name'                   => 'Sunrise Travel Agency',
+                'subdomain'              => 'sunrisetravel-demo',
+                'plan_id'                => 3,
+                'subscription_status'    => 'active',
+                'billing_cycle'          => 'monthly',
+                'subscription_starts_at' => $now->toDateTimeString(),
+                'subscription_ends_at'   => $now->copy()->addMonth()->toDateTimeString(),
+                'created_at'             => $now->toDateTimeString(),
+                'updated_at'             => $now->toDateTimeString(),
+            ],
+            [
+                'id'                     => 3,
+                'name'                   => 'Wanderlust Adventures',
+                'subdomain'              => 'wanderlust',
+                'plan_id'                => 2,
+                'subscription_status'    => 'active',
+                'billing_cycle'          => 'monthly',
+                'subscription_starts_at' => $now->toDateTimeString(),
+                'subscription_ends_at'   => $now->copy()->addMonth()->toDateTimeString(),
+                'created_at'             => $now->toDateTimeString(),
+                'updated_at'             => $now->toDateTimeString(),
+            ],
+            [
+                'id'                     => 4,
+                'name'                   => 'Budget Tours India',
+                'subdomain'              => 'budgettours',
+                'plan_id'                => 1,
+                'subscription_status'    => 'active',
+                'billing_cycle'          => 'monthly',
+                'subscription_starts_at' => $now->toDateTimeString(),
+                'subscription_ends_at'   => $now->copy()->addDays(14)->toDateTimeString(),
+                'created_at'             => $now->toDateTimeString(),
+                'updated_at'             => $now->toDateTimeString(),
+            ],
         ];
 
         foreach ($companies as $c) {

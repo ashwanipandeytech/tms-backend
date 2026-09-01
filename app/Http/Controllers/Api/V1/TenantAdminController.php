@@ -57,23 +57,25 @@ class TenantAdminController extends BaseApiController
                 ];
             })->values();
 
-            $daysRemaining = $company->subscription_ends_at
-                ? max(0, (int) now()->diffInDays($company->subscription_ends_at, false))
-                : null;
+            $createdAt = $company->created_at ?? now();
+            $startsAt = $company->subscription_starts_at ?? $createdAt;
+            $endsAt = $company->subscription_ends_at ?? $startsAt->copy()->addMonth();
+
+            $daysRemaining = max(0, (int) now()->diffInDays($endsAt, false));
 
             return [
                 'id'                  => $company->id,
                 'company_name'        => $company->name,
                 'subdomain'           => $company->subdomain,
-                'status'              => $company->subscription_status?->value ?? $company->subscription_status,
-                'created_at'          => $company->created_at?->toIso8601String(),
+                'status'              => $company->subscription_status?->value ?? $company->subscription_status ?? 'active',
+                'created_at'          => $createdAt->toIso8601String(),
                 'subscription'        => [
                     'plan_name'        => $company->subscriptionPlan?->name ?? 'N/A',
-                    'status'           => $company->subscription_status?->value ?? $company->subscription_status,
-                    'starts_at'        => $company->subscription_starts_at?->toIso8601String(),
-                    'ends_at'          => $company->subscription_ends_at?->toIso8601String(),
+                    'status'           => $company->subscription_status?->value ?? $company->subscription_status ?? 'active',
+                    'starts_at'        => $startsAt->toIso8601String(),
+                    'ends_at'          => $endsAt->toIso8601String(),
                     'days_remaining'   => $daysRemaining,
-                    'is_expiring_soon' => $daysRemaining !== null && $daysRemaining <= 7,
+                    'is_expiring_soon' => $daysRemaining <= 7,
                 ],
                 'total_employees'     => $tenantUsers->count(),
                 'total_allowed_seats' => $company->total_allowed_seats,
