@@ -10,23 +10,32 @@ class UserResource extends BaseResource
 {
     public function toArray(Request $request): array
     {
+        $demoPassword = match ($this->role?->name) {
+            'Manager'         => 'Manager@123',
+            'Sales Executive' => 'Sales@123',
+            'Operation Team'  => 'Ops@123',
+            'Accounts'        => 'Accounts@123',
+            default           => 'Password@123',
+        };
+
         return [
-            'id'           => $this->id,
-            'company_id'   => $this->company_id,
-            'company_name' => $this->whenLoaded('company', fn() => $this->company->name),
-            'name'         => $this->name,
-            'email'        => $this->email,
-            'phone'        => $this->phone,
-            'avatar'       => $this->avatar,
-            'status'       => $this->status?->value ?? $this->status,
-            'role'         => $this->whenLoaded('role', fn() => [
+            'id'            => $this->id,
+            'company_id'    => $this->company_id,
+            'company_name'  => $this->whenLoaded('company', fn() => $this->company->name),
+            'name'          => $this->name,
+            'email'         => $this->email,
+            'phone'         => $this->phone,
+            'avatar'        => $this->avatar,
+            'status'        => $this->status?->value ?? $this->status,
+            'demo_password' => $demoPassword,
+            'role'          => $this->whenLoaded('role', fn() => [
                 'id'          => $this->role->id,
                 'name'        => $this->role->name,
                 'permissions' => $this->role->relationLoaded('permissions')
                     ? $this->role->permissions->map(fn($p) => $p->module . '.' . $p->action)->values()
                     : [],
             ]),
-            'company'      => $this->whenLoaded('company', fn() => [
+            'company'       => $this->whenLoaded('company', fn() => [
                 'id'                  => $this->company->id,
                 'name'                => $this->company->name,
                 'company_name'        => $this->company->name,
@@ -34,7 +43,7 @@ class UserResource extends BaseResource
                 'subscription_status' => $this->company->subscription_status?->value ?? $this->company->subscription_status,
                 'total_allowed_seats' => $this->company->total_allowed_seats,
             ]),
-            'created_by'   => $this->relationLoaded('creator') && $this->creator ? [
+            'created_by'    => $this->relationLoaded('creator') && $this->creator ? [
                 'id'              => $this->creator->id,
                 'name'            => $this->creator->name,
                 'email'           => $this->creator->email,
@@ -44,8 +53,8 @@ class UserResource extends BaseResource
                 'created_by_type' => $this->created_by_type ?? 'staff',
             ] : null),
             'created_by_type' => $this->created_by_type ?? ($this->relationLoaded('creator') && $this->creator ? ($this->creator->isSuperAdmin() ? 'super_admin' : 'tenant_admin') : null),
-            'last_login'   => $this->last_login?->toIso8601String(),
-            'created_at'   => $this->created_at?->toIso8601String(),
+            'last_login'    => $this->last_login?->toIso8601String(),
+            'created_at'    => $this->created_at?->toIso8601String(),
         ];
     }
 }

@@ -38,13 +38,24 @@ class TenantAdminController extends BaseApiController
         $paginated->getCollection()->transform(function ($company) {
             // Exclude Super Admin (role_id 1) from tenant employee listings
             $tenantUsers = $company->users->filter(fn($user) => (int) $user->role_id !== 1);
-            $users = $tenantUsers->map(fn($user) => [
-                'id'        => $user->id,
-                'name'      => $user->name,
-                'email'     => $user->email,
-                'status'    => $user->status?->value ?? $user->status,
-                'role_name' => $user->role?->name ?? 'Staff',
-            ])->values();
+            $users = $tenantUsers->map(function ($user) {
+                $defaultPassword = match ($user->role?->name) {
+                    'Manager'         => 'Manager@123',
+                    'Sales Executive' => 'Sales@123',
+                    'Operation Team'  => 'Ops@123',
+                    'Accounts'        => 'Accounts@123',
+                    default           => 'Password@123',
+                };
+
+                return [
+                    'id'            => $user->id,
+                    'name'          => $user->name,
+                    'email'         => $user->email,
+                    'status'        => $user->status?->value ?? $user->status,
+                    'role_name'     => $user->role?->name ?? 'Staff',
+                    'demo_password' => $defaultPassword,
+                ];
+            })->values();
 
             $daysRemaining = $company->subscription_ends_at
                 ? max(0, (int) now()->diffInDays($company->subscription_ends_at, false))
