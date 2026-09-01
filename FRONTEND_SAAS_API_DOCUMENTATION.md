@@ -55,7 +55,7 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-## 2. Super Admin Tenant Workspace Switching (`X-Tenant-ID` Header) `[NEW]`
+## 2. Super Admin Tenant Workspace Switching (`X-Tenant-ID` Header) `[UPDATED]`
 
 When a Super Admin selects a specific tenant from the `/select-tenant` panel, the frontend should attach an **`X-Tenant-ID`** HTTP header to all outgoing API requests.
 
@@ -65,30 +65,30 @@ Authorization: Bearer <super_admin_token>
 X-Tenant-ID: 105
 ```
 
-### Effect on Backend
-- Automatically scopes all queries (`GET /leads`, `GET /bookings`, `GET /users`, etc.) to company ID `105`.
-- Automatically sets `company_id = 105` on all new record creations (`POST /leads`, `POST /packages`, etc.).
+### Effect on Backend & Global Exclusions
+- **Tenant-Specific APIs** (`/leads`, `/bookings`, `/packages`, `/inventory`, `/finance`, `/users`): Scopes all queries and creations to `company_id = 105`.
+- **Global Resource APIs** (`/roles`, `/permissions`, `/plans`, `/admin/companies`): Explicitly **ignore** the `X-Tenant-ID` header and return global platform resources.
 
 ---
 
-## 3. Tenant Data Reset APIs (`DELETE /api/v1/admin/reset`) `[UPDATED]`
+## 3. Universal Roles & Permissions Management `[NEW]`
 
-Clears/resets tenant test data (leads, bookings, packages, inventory, custom roles, staff) while **strictly preserving the primary Super Admin account**.
+- **Global Availability**: Roles and Permissions are universal and shared across all tenants.
+- **Super Admin Only**: Creating, updating, or deleting roles (`POST /api/v1/roles`, `PUT /api/v1/roles/{id}`, `DELETE /api/v1/roles/{id}`) is strictly restricted to Super Admin. Non-SuperAdmin requests return `403 Forbidden` (`FORBIDDEN`).
+- **Reset Preservation**: Performing tenant resets (`DELETE /api/v1/admin/reset`) **never** deletes or modifies roles or permissions.
 
-### 3.1 Single Tenant Data Reset Payload
-- **URL**: `DELETE /api/v1/admin/reset`
-- **Headers**: `Authorization: Bearer <token>`
+---
 
+## 4. Tenant Data Reset APIs (`DELETE /api/v1/admin/reset`) `[UPDATED]`
+
+### 4.1 Single Tenant Reset Payload
 ```json
 {
   "id": 105
 }
 ```
 
-### 3.2 Bulk Clear All Tenants Data Payload
-- **URL**: `DELETE /api/v1/admin/reset`
-- **Headers**: `Authorization: Bearer <token>`
-
+### 4.2 Bulk Clear All Tenants Payload
 ```json
 {
   "clear_all": true
@@ -106,30 +106,5 @@ Clears/resets tenant test data (leads, bookings, packages, inventory, custom rol
     "preserved_admin": "travel@demohandler.in",
     "status": "reset_completed"
   }
-}
-```
-
----
-
-## 4. User Creator Tracking (`created_by` & `created_by_type`) `[NEW]`
-
-When fetching or creating users (`GET /api/v1/users`, `POST /api/v1/users`), the `UserResource` includes creator details:
-
-```json
-{
-  "id": 43,
-  "name": "Amit Verma",
-  "email": "amit@sunrisetravel.com",
-  "role": {
-    "id": 3,
-    "name": "Sales Executive"
-  },
-  "created_by": {
-    "id": 42,
-    "name": "Rajesh Kumar",
-    "email": "admin@sunrisetravel.com",
-    "created_by_type": "tenant_admin"
-  },
-  "created_by_type": "tenant_admin"
 }
 ```

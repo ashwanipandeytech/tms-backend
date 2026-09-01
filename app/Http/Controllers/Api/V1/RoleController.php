@@ -34,6 +34,10 @@ class RoleController extends BaseApiController
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+            return $this->errorResponse('Only Super Admin can create or manage universal roles.', 403, [], 'FORBIDDEN');
+        }
+
         $data = $request->validate([
             'name'          => 'required|string|max:50',
             'description'   => 'nullable|string|max:255',
@@ -42,6 +46,7 @@ class RoleController extends BaseApiController
         ]);
 
         $role = $this->service->create([
+            'company_id'  => null,
             'name'        => $data['name'],
             'description' => $data['description'] ?? null,
         ]);
@@ -61,6 +66,10 @@ class RoleController extends BaseApiController
 
     public function update(Request $request, int|string $id): JsonResponse
     {
+        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+            return $this->errorResponse('Only Super Admin can edit or update universal roles.', 403, [], 'FORBIDDEN');
+        }
+
         $role = Role::findOrFail($id);
 
         $data = $request->validate([
@@ -81,6 +90,10 @@ class RoleController extends BaseApiController
 
     public function destroy(int|string $id): JsonResponse
     {
+        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+            return $this->errorResponse('Only Super Admin can delete universal roles.', 403, [], 'FORBIDDEN');
+        }
+
         $this->service->delete($id);
         return $this->successResponse(null, 'Role deleted successfully');
     }

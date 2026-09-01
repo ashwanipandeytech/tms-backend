@@ -223,13 +223,7 @@ class TenantAdminController extends BaseApiController
                 ->where('role_id', '!=', 1)
                 ->delete();
 
-            // Delete custom tenant roles except system default roles
-            $rolesQuery = Role::query();
-            if (!$clearAll && $targetCompanyId) {
-                $rolesQuery->where('company_id', $targetCompanyId);
-            }
-            $rolesQuery->whereNotIn('name', ['Super Admin', 'Manager', 'Sales Executive', 'Operation Team', 'Accounts'])
-                ->delete();
+            // Note: Roles and Permissions are globally managed and strictly preserved on reset.
 
             // Clear tenant resource tables
             $tables = [
