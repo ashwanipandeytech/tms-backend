@@ -10,8 +10,9 @@ This document tracks current issues, missing endpoints, and feature requests blo
 
 ---
 
-## ✨ Action Items for Backend Team (Completed)
+## ✨ Action Items for Backend Team (Pending & Completed)
 
+- [ ] **Universal Roles & Permissions Management**: Roles and permissions should strictly be created and updated *only* by the Super Admin. Furthermore, any roles created by the Super Admin must be **universal/global**, meaning they are automatically available to and shared across all tenants, rather than being isolated to a single company. **Important:** Resetting a tenant's data or performing a Bulk Clear must **NOT** delete or impact roles and permissions, as they are globally managed.
 - [x] **Refactor Login Endpoint (`POST /api/v1/login`)**: `role_type` is completely optional. Backend automatically detects role and company context based on `email` and `password`.
 - [x] **Include Permissions in Login Response**: `user.role.permissions` relation is eager-loaded and returned as an array of permission strings (e.g. `["leads.view", "leads.create"]`) in `POST /api/v1/login` and `GET /api/v1/me`.
 - [x] **Include Company Name in Login Response**: `user.company` object and `user.company_name` string are serialized in `UserResource` during login and profile fetch.
