@@ -16,8 +16,14 @@ trait BelongsToTenantTrait
     {
         // 1. Auto-assign company_id on record creation
         static::creating(function ($model) {
-            if (empty($model->company_id) && auth()->check() && auth()->user()->company_id) {
-                $model->company_id = auth()->user()->company_id;
+            if (empty($model->company_id) && auth()->check()) {
+                $user = auth()->user();
+                $tenantHeaderId = request()->header('X-Tenant-ID');
+                if ($user->isSuperAdmin() && !empty($tenantHeaderId)) {
+                    $model->company_id = (int) $tenantHeaderId;
+                } elseif ($user->company_id) {
+                    $model->company_id = $user->company_id;
+                }
             }
         });
 
@@ -26,8 +32,12 @@ trait BelongsToTenantTrait
             if (auth()->check()) {
                 $user = auth()->user();
 
-                // Super Admin bypasses global tenant scope to inspect all tenants
+                // Check if Super Admin is operating inside a specific tenant via X-Tenant-ID header
+                $tenantHeaderId = request()->header('X-Tenant-ID');
                 if ($user->isSuperAdmin()) {
+                    if (!empty($tenantHeaderId)) {
+                        $builder->where($builder->getModel()->getTable() . '.company_id', (int) $tenantHeaderId);
+                    }
                     return;
                 }
 

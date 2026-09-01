@@ -141,13 +141,15 @@ class TenantAdminController extends BaseApiController
             $tenantAdminRole = Role::where('name', 'Super Admin')->first() ?? $tenantRoles['Manager'];
 
             $adminUser = User::create([
-                'company_id' => $company->id,
-                'role_id'    => $tenantAdminRole->id,
-                'name'       => $data['admin_name'],
-                'email'      => $data['admin_email'],
-                'phone'      => $data['admin_phone'] ?? null,
-                'password'   => Hash::make($data['initial_password']),
-                'status'     => 'active',
+                'company_id'      => $company->id,
+                'role_id'         => $tenantAdminRole->id,
+                'name'            => $data['admin_name'],
+                'email'           => $data['admin_email'],
+                'phone'           => $data['admin_phone'] ?? null,
+                'password'        => Hash::make($data['initial_password']),
+                'status'          => 'active',
+                'created_by'      => auth()->id() ?? null,
+                'created_by_type' => auth()->user()?->isSuperAdmin() ? 'super_admin' : 'tenant_admin',
             ]);
 
             return $this->createdResponse([
@@ -186,7 +188,7 @@ class TenantAdminController extends BaseApiController
     }
 
     /**
-     * Bulk Reset/Clear Tenant Data (excluding main Super Admin account).
+     * Bulk Reset/Clear Tenant Data (supports clear_all: true or specific id / tenant_id payload).
      */
     public function resetTenantData(Request $request): JsonResponse
     {
@@ -196,13 +198,26 @@ class TenantAdminController extends BaseApiController
             return $this->errorResponse('Unauthenticated', 401);
         }
 
-        $companyId = $currentUser->company_id;
+        $clearAll = $request->boolean('clear_all') || $request->input('clear_all') === true;
+        $targetCompanyId = null;
 
-        return DB::transaction(function () use ($currentUser, $companyId) {
+        if (!$clearAll) {
+            if ($request->filled('id')) {
+                $targetCompanyId = (int) $request->input('id');
+            } elseif ($request->filled('tenant_id')) {
+                $targetCompanyId = (int) $request->input('tenant_id');
+            } elseif ($request->header('X-Tenant-ID')) {
+                $targetCompanyId = (int) $request->header('X-Tenant-ID');
+            } else {
+                $targetCompanyId = $currentUser->company_id;
+            }
+        }
+
+        return DB::transaction(function () use ($currentUser, $clearAll, $targetCompanyId) {
             // Delete staff users except current user and Super Admin (role_id 1)
             $usersQuery = User::query();
-            if ($companyId) {
-                $usersQuery->where('company_id', $companyId);
+            if (!$clearAll && $targetCompanyId) {
+                $usersQuery->where('company_id', $targetCompanyId);
             }
             $usersQuery->where('id', '!=', $currentUser->id)
                 ->where('role_id', '!=', 1)
@@ -210,8 +225,8 @@ class TenantAdminController extends BaseApiController
 
             // Delete custom tenant roles except system default roles
             $rolesQuery = Role::query();
-            if ($companyId) {
-                $rolesQuery->where('company_id', $companyId);
+            if (!$clearAll && $targetCompanyId) {
+                $rolesQuery->where('company_id', $targetCompanyId);
             }
             $rolesQuery->whereNotIn('name', ['Super Admin', 'Manager', 'Sales Executive', 'Operation Team', 'Accounts'])
                 ->delete();
@@ -238,18 +253,23 @@ class TenantAdminController extends BaseApiController
             foreach ($tables as $modelClass) {
                 if (class_exists($modelClass)) {
                     $q = $modelClass::query();
-                    if ($companyId) {
-                        $q->where('company_id', $companyId);
+                    if (!$clearAll && $targetCompanyId) {
+                        $q->where('company_id', $targetCompanyId);
                     }
                     $q->delete();
                 }
             }
 
+            $msg = $clearAll
+                ? 'All tenant data reset successfully across all companies. Primary Super Admin account preserved.'
+                : ($targetCompanyId ? "Tenant data for company ID {$targetCompanyId} reset successfully." : 'Tenant data reset successfully.');
+
             return $this->successResponse([
-                'company_id'      => $companyId,
+                'clear_all'       => $clearAll,
+                'company_id'      => $targetCompanyId,
                 'preserved_admin' => $currentUser->email,
                 'status'          => 'reset_completed',
-            ], 'Tenant data reset successfully. Super Admin account preserved.');
+            ], $msg);
         });
     }
 }

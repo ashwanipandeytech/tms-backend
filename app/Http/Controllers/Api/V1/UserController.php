@@ -80,9 +80,11 @@ class UserController extends BaseApiController
 
         $data['password'] = Hash::make($data['password']);
         $data['status'] = $data['status'] ?? 'active';
+        $data['created_by'] = $currentUser?->id;
+        $data['created_by_type'] = $currentUser?->isSuperAdmin() ? 'super_admin' : 'tenant_admin';
 
         $user = $this->service->create($data);
-        return $this->createdResponse(new UserResource($user->load('role.permissions')), 'User created successfully');
+        return $this->createdResponse(new UserResource($user->load(['role.permissions', 'creator'])), 'User created successfully');
     }
 
     public function show(int|string $id): JsonResponse

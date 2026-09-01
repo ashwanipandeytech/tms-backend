@@ -238,7 +238,7 @@
           }
         },
         {
-          "name": "List All Subscriber Companies (Super Admin)",
+          "name": "List All Subscriber Companies & Stats (Super Admin)",
           "request": {
             "method": "GET",
             "header": [
@@ -252,13 +252,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/admin/tenants?page=1&per_page=15",
+              "raw": "{{baseUrl}}/admin/companies?page=1&per_page=15",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "admin",
-                "tenants"
+                "companies"
               ],
               "query": [
                 {
@@ -305,6 +305,32 @@
                 "tenants",
                 "1",
                 "addon-seats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Clear / Reset Tenant Data",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reset"
               ]
             }
           }

@@ -29,6 +29,8 @@ class User extends Authenticatable
         'password',
         'avatar',
         'status',
+        'created_by',
+        'created_by_type',
         'last_login',
     ];
 
@@ -52,6 +54,11 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function leads(): HasMany

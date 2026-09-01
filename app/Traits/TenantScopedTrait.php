@@ -15,19 +15,34 @@ trait TenantScopedTrait
     protected static function bootTenantScopedTrait(): void
     {
         static::creating(function (Model $model) {
-            if (auth()->check() && isset(auth()->user()->company_id)) {
-                if (empty($model->company_id) && \Schema::hasColumn($model->getTable(), 'company_id')) {
-                    $model->company_id = auth()->user()->company_id;
+            if (auth()->check()) {
+                $user = auth()->user();
+                $tenantHeaderId = request()->header('X-Tenant-ID');
+                if ($user->isSuperAdmin() && !empty($tenantHeaderId)) {
+                    if (empty($model->company_id) && \Schema::hasColumn($model->getTable(), 'company_id')) {
+                        $model->company_id = (int) $tenantHeaderId;
+                    }
+                } elseif (isset($user->company_id) && empty($model->company_id) && \Schema::hasColumn($model->getTable(), 'company_id')) {
+                    $model->company_id = $user->company_id;
                 }
             }
         });
 
         static::addGlobalScope('tenant', function (Builder $builder) {
-            if (auth()->check() && isset(auth()->user()->company_id) && auth()->user()->company_id !== null) {
-                // If not Super Admin (who bypasses tenant filter)
-                if (!method_exists(auth()->user(), 'isSuperAdmin') || !auth()->user()->isSuperAdmin()) {
+            if (auth()->check()) {
+                $user = auth()->user();
+                $tenantHeaderId = request()->header('X-Tenant-ID');
+
+                if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+                    if (!empty($tenantHeaderId) && \Schema::hasColumn($builder->getModel()->getTable(), 'company_id')) {
+                        $builder->where($builder->getModel()->getTable() . '.company_id', (int) $tenantHeaderId);
+                    }
+                    return;
+                }
+
+                if (isset($user->company_id) && $user->company_id !== null) {
                     if (\Schema::hasColumn($builder->getModel()->getTable(), 'company_id')) {
-                        $builder->where($builder->getModel()->getTable() . '.company_id', auth()->user()->company_id);
+                        $builder->where($builder->getModel()->getTable() . '.company_id', $user->company_id);
                     }
                 }
             }

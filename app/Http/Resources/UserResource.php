@@ -34,6 +34,16 @@ class UserResource extends BaseResource
                 'subscription_status' => $this->company->subscription_status?->value ?? $this->company->subscription_status,
                 'total_allowed_seats' => $this->company->total_allowed_seats,
             ]),
+            'created_by'   => $this->relationLoaded('creator') && $this->creator ? [
+                'id'              => $this->creator->id,
+                'name'            => $this->creator->name,
+                'email'           => $this->creator->email,
+                'created_by_type' => $this->created_by_type ?? ($this->creator->isSuperAdmin() ? 'super_admin' : 'tenant_admin'),
+            ] : ($this->created_by ? [
+                'id'              => $this->created_by,
+                'created_by_type' => $this->created_by_type ?? 'staff',
+            ] : null),
+            'created_by_type' => $this->created_by_type ?? ($this->relationLoaded('creator') && $this->creator ? ($this->creator->isSuperAdmin() ? 'super_admin' : 'tenant_admin') : null),
             'last_login'   => $this->last_login?->toIso8601String(),
             'created_at'   => $this->created_at?->toIso8601String(),
         ];

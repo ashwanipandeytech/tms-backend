@@ -11,7 +11,7 @@ This document details **only** the new and modified API endpoints, error codes, 
 ### Endpoints Details
 - **URL**: `POST /api/v1/login`
 - **Authentication**: Public (No Token Required)
-- **Note**: `role_type` parameter is now **optional**. The backend automatically detects the user's role and tenant company from their credentials.
+- **Note**: `role_type` parameter is **optional**. The backend automatically detects the user's role and tenant company from their credentials.
 
 ### Request Body Payload
 ```json
@@ -44,7 +44,9 @@ This document details **only** the new and modified API endpoints, error codes, 
         "subdomain": "safarmusafir",
         "subscription_status": "active",
         "total_allowed_seats": 999
-      }
+      },
+      "created_by": null,
+      "created_by_type": null
     },
     "token": "1|sanctum_bearer_token_string_here"
   }
@@ -53,94 +55,55 @@ This document details **only** the new and modified API endpoints, error codes, 
 
 ---
 
-## 2. Subscription Plans Management API (`/api/v1/plans`) `[NEW]`
+## 2. Super Admin Tenant Workspace Switching (`X-Tenant-ID` Header) `[NEW]`
 
-### 2.1 List All Subscription Plans (Public Pricing Page & Authenticated Dashboard)
-- **URL**: `GET /api/v1/plans`
-- **Authentication**: **Public & Optional Bearer Token**
-  - *Public Call*: Returns all active subscription plans.
-  - *Authenticated Call* (`Authorization: Bearer <token>`): Includes `"is_current_plan": true` on the subscriber's active plan.
+When a Super Admin selects a specific tenant from the `/select-tenant` panel, the frontend should attach an **`X-Tenant-ID`** HTTP header to all outgoing API requests.
 
----
-
-## 3. Tenant Onboarding & Super Admin Management APIs (`/api/v1/admin/*`) `[NEW]`
-
-### 3.1 Onboard / Register New Company Account
-- **URL**: `POST /api/v1/admin/tenants`
-- **Authentication**: **Public & Optional Bearer Token**
-
----
-
-### 3.2 List All Registered Companies & Statistics (`GET /api/v1/admin/companies`) `[NEW]`
-Dashboard list for Super Admin providing company statistics, subscription days remaining, employee counts, and nested staff details.
-
-- **URL**: `GET /api/v1/admin/companies?page=1&per_page=15`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
-
-#### Success Response (200 OK)
-```json
-{
-  "success": true,
-  "message": "Company subscribers and statistics retrieved successfully",
-  "data": [
-    {
-      "id": 105,
-      "company_name": "Sunrise Travel Agency",
-      "subdomain": "sunrisetravel",
-      "status": "active",
-      "created_at": "2026-08-25T12:00:00Z",
-      "subscription": {
-        "plan_name": "Starter Plan",
-        "status": "active",
-        "starts_at": "2026-08-25T12:00:00Z",
-        "ends_at": "2026-09-25T12:00:00Z",
-        "days_remaining": 31,
-        "is_expiring_soon": false
-      },
-      "total_employees": 3,
-      "total_allowed_seats": 5,
-      "employees": [
-        {
-          "id": 42,
-          "name": "Rajesh Kumar",
-          "email": "admin@sunrisetravel.com",
-          "status": "active",
-          "role_name": "Manager"
-        }
-      ]
-    }
-  ],
-  "meta": {
-    "current_page": 1,
-    "last_page": 1,
-    "per_page": 15,
-    "total": 1
-  }
-}
+### Request Header Syntax
+```http
+Authorization: Bearer <super_admin_token>
+X-Tenant-ID: 105
 ```
 
----
-
-### 3.3 Purchase / Update Add-on User Seats (`PUT /api/v1/admin/tenants/{id}/addon-seats`)
-- **URL**: `PUT /api/v1/admin/tenants/{id}/addon-seats`
-- **Headers**: `Authorization: Bearer <super_admin_token>`
+### Effect on Backend
+- Automatically scopes all queries (`GET /leads`, `GET /bookings`, `GET /users`, etc.) to company ID `105`.
+- Automatically sets `company_id = 105` on all new record creations (`POST /leads`, `POST /packages`, etc.).
 
 ---
 
-### 3.4 Bulk Reset Tenant Data (`DELETE /api/v1/admin/reset`) `[NEW]`
-Clears/resets test data (leads, bookings, packages, inventory, custom roles, staff) while **strictly preserving the primary Super Admin account**.
+## 3. Tenant Data Reset APIs (`DELETE /api/v1/admin/reset`) `[UPDATED]`
 
+Clears/resets tenant test data (leads, bookings, packages, inventory, custom roles, staff) while **strictly preserving the primary Super Admin account**.
+
+### 3.1 Single Tenant Data Reset Payload
 - **URL**: `DELETE /api/v1/admin/reset`
 - **Headers**: `Authorization: Bearer <token>`
 
+```json
+{
+  "id": 105
+}
+```
+
+### 3.2 Bulk Clear All Tenants Data Payload
+- **URL**: `DELETE /api/v1/admin/reset`
+- **Headers**: `Authorization: Bearer <token>`
+
+```json
+{
+  "clear_all": true
+}
+```
+
 #### Success Response (200 OK)
 ```json
 {
   "success": true,
-  "message": "Tenant data reset successfully. Super Admin account preserved.",
+  "message": "All tenant data reset successfully across all companies. Primary Super Admin account preserved.",
   "data": {
-    "company_id": 105,
-    "preserved_admin": "admin@sunrisetravel.com",
+    "clear_all": true,
+    "company_id": null,
+    "preserved_admin": "travel@demohandler.in",
     "status": "reset_completed"
   }
 }
@@ -148,7 +111,25 @@ Clears/resets test data (leads, bookings, packages, inventory, custom roles, sta
 
 ---
 
-## 4. Tenant Role & Permission Management APIs `[UPDATED]`
+## 4. User Creator Tracking (`created_by` & `created_by_type`) `[NEW]`
 
-- `GET /api/v1/roles` automatically filters out the `Super Admin` role.
-- `GET /api/v1/users` automatically filters out Super Admin accounts when called by non-SuperAdmin users.
+When fetching or creating users (`GET /api/v1/users`, `POST /api/v1/users`), the `UserResource` includes creator details:
+
+```json
+{
+  "id": 43,
+  "name": "Amit Verma",
+  "email": "amit@sunrisetravel.com",
+  "role": {
+    "id": 3,
+    "name": "Sales Executive"
+  },
+  "created_by": {
+    "id": 42,
+    "name": "Rajesh Kumar",
+    "email": "admin@sunrisetravel.com",
+    "created_by_type": "tenant_admin"
+  },
+  "created_by_type": "tenant_admin"
+}
+```

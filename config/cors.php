@@ -21,9 +21,9 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['*', 'X-Tenant-ID', 'Authorization', 'Content-Type', 'Accept'],
 
-    'exposed_headers' => ['Authorization'],
+    'exposed_headers' => ['Authorization', 'X-Tenant-ID'],
 
     'max_age' => 86400,
 
