@@ -27,10 +27,10 @@ class UserController extends BaseApiController
 
         $query = User::with(['role.permissions', 'company']);
 
-        // Hide Super Admin accounts (role_id 1) if authenticated user is not a Super Admin
-        if (!$currentUser || !$currentUser->isSuperAdmin()) {
-            $query->where('role_id', '!=', 1);
-        }
+        // Always exclude Super Admin accounts (role_id 1) from tenant user listings.
+        // Super Admin is a platform-level account, not a tenant staff member.
+        // Super Admin data is accessible only via GET /api/v1/me (profile endpoint).
+        $query->where('role_id', '!=', 1);
 
         if ($request->filled('search')) {
             $searchTerm = $request->input('search');

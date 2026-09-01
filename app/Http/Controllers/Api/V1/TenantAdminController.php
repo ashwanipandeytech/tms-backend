@@ -36,13 +36,15 @@ class TenantAdminController extends BaseApiController
             ->paginate((int) $request->input('per_page', 15));
 
         $paginated->getCollection()->transform(function ($company) {
-            $users = $company->users->map(fn($user) => [
+            // Exclude Super Admin (role_id 1) from tenant employee listings
+            $tenantUsers = $company->users->filter(fn($user) => (int) $user->role_id !== 1);
+            $users = $tenantUsers->map(fn($user) => [
                 'id'        => $user->id,
                 'name'      => $user->name,
                 'email'     => $user->email,
                 'status'    => $user->status?->value ?? $user->status,
                 'role_name' => $user->role?->name ?? 'Staff',
-            ]);
+            ])->values();
 
             $daysRemaining = $company->subscription_ends_at
                 ? max(0, (int) now()->diffInDays($company->subscription_ends_at, false))
@@ -62,7 +64,7 @@ class TenantAdminController extends BaseApiController
                     'days_remaining'   => $daysRemaining,
                     'is_expiring_soon' => $daysRemaining !== null && $daysRemaining <= 7,
                 ],
-                'total_employees'     => $company->users->count(),
+                'total_employees'     => $tenantUsers->count(),
                 'total_allowed_seats' => $company->total_allowed_seats,
                 'employees'           => $users,
             ];
