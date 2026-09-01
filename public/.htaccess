@@ -5,7 +5,8 @@
 <IfModule mod_headers.c>
     Header always set Access-Control-Allow-Origin "*"
     Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-XSRF-TOKEN"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-XSRF-TOKEN, X-Tenant-ID"
+    Header always set Access-Control-Expose-Headers "Authorization, X-Tenant-ID"
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -26,6 +27,10 @@
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Handle X-Tenant-ID Header (Super Admin tenant workspace switching)
+    RewriteCond %{HTTP:X-Tenant-ID} .
+    RewriteRule .* - [E=HTTP_X_TENANT_ID:%{HTTP:X-Tenant-ID}]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

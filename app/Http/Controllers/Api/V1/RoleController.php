@@ -90,7 +90,7 @@ class RoleController extends BaseApiController
 
     public function destroy(int|string $id): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
+        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
             return $this->errorResponse('Only Super Admin can delete universal roles.', 403, [], 'FORBIDDEN');
         }
 
