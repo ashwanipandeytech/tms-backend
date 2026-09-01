@@ -78,12 +78,15 @@ class UserController extends BaseApiController
             'status'                => 'nullable|string|in:active,inactive',
         ]);
 
+        $rawPassword = $data['password'];
         $data['password'] = Hash::make($data['password']);
         $data['status'] = $data['status'] ?? 'active';
         $data['created_by'] = $currentUser?->id;
         $data['created_by_type'] = $currentUser?->isSuperAdmin() ? 'super_admin' : 'tenant_admin';
 
         $user = $this->service->create($data);
+        $user->demo_password = $rawPassword;
+
         return $this->createdResponse(new UserResource($user->load(['role.permissions', 'creator'])), 'User created successfully');
     }
 
@@ -105,12 +108,17 @@ class UserController extends BaseApiController
         ]);
 
         if (!empty($data['password'])) {
+            $rawPassword = $data['password'];
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
         }
 
         $user = $this->service->update($id, $data);
+        if (isset($rawPassword)) {
+            $user->demo_password = $rawPassword;
+        }
+
         return $this->successResponse(new UserResource($user->load('role.permissions')), 'User updated successfully');
     }
 

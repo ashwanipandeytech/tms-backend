@@ -10,13 +10,13 @@ class UserResource extends BaseResource
 {
     public function toArray(Request $request): array
     {
-        $demoPassword = match ($this->role?->name) {
+        $demoPassword = $this->demo_password ?? ($request->user()?->isSuperAdmin() ? match ($this->role?->name) {
             'Manager'         => 'Manager@123',
             'Sales Executive' => 'Sales@123',
             'Operation Team'  => 'Ops@123',
             'Accounts'        => 'Accounts@123',
-            default           => 'Password@123',
-        };
+            default           => null,
+        } : null);
 
         return [
             'id'            => $this->id,
