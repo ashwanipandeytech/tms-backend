@@ -23,6 +23,23 @@ class LeadWebhookController extends BaseApiController
     }
 
     /**
+     * Handle Meta / Facebook Webhook Verification Challenge (GET Request).
+     */
+    public function verifyMetaWebhook(\Illuminate\Http\Request $request): \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+    {
+        $verifyToken = env('META_VERIFY_TOKEN', 'safarsystem_meta_token');
+        $mode = $request->query('hub_mode') ?? $request->query('hub.mode');
+        $token = $request->query('hub_verify_token') ?? $request->query('hub.verify_token');
+        $challenge = $request->query('hub_challenge') ?? $request->query('hub.challenge');
+
+        if ($mode === 'subscribe' && $token === $verifyToken) {
+            return response((string) $challenge, 200)->header('Content-Type', 'text/plain');
+        }
+
+        return response()->json(['error' => 'Verification token mismatch'], 403);
+    }
+
+    /**
      * Ingest Lead from Meta / Facebook & Instagram Ads campaign webhook.
      */
     public function handleMetaWebhook(LeadWebhookMetaRequest $request): JsonResponse

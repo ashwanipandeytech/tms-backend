@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
     Route::get('config/statuses', [ConfigController::class, 'statuses']);
 
     Route::prefix('webhooks')->group(function () {
+        Route::get('leads/meta', [LeadWebhookController::class, 'verifyMetaWebhook']);
         Route::post('leads/meta', [LeadWebhookController::class, 'handleMetaWebhook']);
         Route::post('leads/google', [LeadWebhookController::class, 'handleGoogleWebhook']);
         Route::post('leads/whatsapp', [LeadWebhookController::class, 'handleWhatsappWebhook']);
