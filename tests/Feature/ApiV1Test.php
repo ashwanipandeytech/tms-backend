@@ -251,7 +251,8 @@ class ApiV1Test extends TestCase
     public function test_lead_webhook_ingestion(): void
     {
         // Meta Verification Challenge
-        $verifyResponse = $this->get('/api/v1/webhooks/leads/meta?hub_mode=subscribe&hub_verify_token=safarsystem_meta_token&hub_challenge=123456');
+        $verifyToken = env('META_VERIFY_TOKEN', 'safarsystem_meta_token_2026');
+        $verifyResponse = $this->get('/api/v1/webhooks/leads/meta?hub_mode=subscribe&hub_verify_token=' . $verifyToken . '&hub_challenge=123456');
         $verifyResponse->assertStatus(200);
         $this->assertEquals('123456', $verifyResponse->getContent());
 
