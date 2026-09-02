@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\PackageStoreRequest;
+use App\Http\Requests\PackageUpdateRequest;
 use App\Http\Resources\PackageResource;
 use App\Services\PackageService;
 use Illuminate\Http\JsonResponse;
@@ -30,21 +32,9 @@ class PackageController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Packages retrieved successfully', PackageResource::class);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(PackageStoreRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name'           => 'required|string|max:150',
-            'destination_id' => 'nullable|exists:destinations,id',
-            'category_id'    => 'nullable|exists:package_categories,id',
-            'nights'         => 'nullable|integer|min:0',
-            'days'           => 'nullable|integer|min:0',
-            'price'          => 'required|numeric|min:0',
-            'inclusions'     => 'nullable|string',
-            'exclusions'     => 'nullable|string',
-            'terms'          => 'nullable|string',
-            'status'         => 'nullable|string',
-        ]);
-
+        $validated = $request->validated();
         $package = $this->service->create($validated);
         return $this->createdResponse(new PackageResource($package), 'Package created successfully');
     }
@@ -55,21 +45,9 @@ class PackageController extends BaseApiController
         return $this->successResponse(new PackageResource($package), 'Package details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(PackageUpdateRequest $request, int|string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'name'           => 'sometimes|required|string|max:150',
-            'destination_id' => 'nullable|exists:destinations,id',
-            'category_id'    => 'nullable|exists:package_categories,id',
-            'nights'         => 'nullable|integer|min:0',
-            'days'           => 'nullable|integer|min:0',
-            'price'          => 'sometimes|required|numeric|min:0',
-            'inclusions'     => 'nullable|string',
-            'exclusions'     => 'nullable|string',
-            'terms'          => 'nullable|string',
-            'status'         => 'nullable|string',
-        ]);
-
+        $validated = $request->validated();
         $package = $this->service->update($id, $validated);
         return $this->successResponse(new PackageResource($package), 'Package updated successfully');
     }

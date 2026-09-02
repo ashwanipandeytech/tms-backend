@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\CustomerStoreRequest;
+use App\Http\Requests\CustomerUpdateRequest;
 use App\Http\Resources\CustomerResource;
 use App\Services\CustomerService;
 use Illuminate\Http\JsonResponse;
@@ -31,16 +33,9 @@ class CustomerController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Customers retrieved successfully', CustomerResource::class);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(CustomerStoreRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name'   => 'required|string|max:100',
-            'phone'  => 'required|string|max:20',
-            'email'  => 'nullable|email|max:150',
-            'city'   => 'nullable|string|max:100',
-            'status' => 'nullable|string',
-        ]);
-
+        $data = $request->validated();
         $customer = $this->service->create($data);
         return $this->createdResponse(new CustomerResource($customer), 'Customer created successfully');
     }
@@ -51,16 +46,9 @@ class CustomerController extends BaseApiController
         return $this->successResponse(new CustomerResource($customer), 'Customer details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(CustomerUpdateRequest $request, int|string $id): JsonResponse
     {
-        $data = $request->validate([
-            'name'   => 'sometimes|required|string|max:100',
-            'phone'  => 'sometimes|required|string|max:20',
-            'email'  => 'nullable|email|max:150',
-            'city'   => 'nullable|string|max:100',
-            'status' => 'nullable|string',
-        ]);
-
+        $data = $request->validated();
         $customer = $this->service->update($id, $data);
         return $this->successResponse(new CustomerResource($customer), 'Customer updated successfully');
     }

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\SubscriptionPlanStoreRequest;
+use App\Http\Requests\SubscriptionPlanUpdateRequest;
 use App\Models\SubscriptionPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,20 +31,13 @@ class SubscriptionPlanController extends BaseApiController
         return $this->successResponse($plans, 'Subscription plans retrieved successfully');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(SubscriptionPlanStoreRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name'             => 'required|string|max:100',
-            'monthly_price'    => 'required|numeric|min:0',
-            'yearly_price'     => 'required|numeric|min:0',
-            'base_user_seats'  => 'required|integer|min:1',
-            'addon_seat_price' => 'required|numeric|min:0',
-            'modules'          => 'required|array',
-            'database_type'    => 'nullable|string|in:shared,dedicated',
-            'status'           => 'nullable|string|in:active,inactive',
-        ]);
+        $data = $request->validated();
 
-        $data['slug'] = Str::slug($data['name']);
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
         $data['database_type'] = $data['database_type'] ?? 'shared';
         $data['status'] = $data['status'] ?? 'active';
 
@@ -56,22 +51,12 @@ class SubscriptionPlanController extends BaseApiController
         return $this->successResponse($plan, 'Subscription plan details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(SubscriptionPlanUpdateRequest $request, int|string $id): JsonResponse
     {
         $plan = SubscriptionPlan::findOrFail($id);
+        $data = $request->validated();
 
-        $data = $request->validate([
-            'name'             => 'sometimes|required|string|max:100',
-            'monthly_price'    => 'sometimes|required|numeric|min:0',
-            'yearly_price'     => 'sometimes|required|numeric|min:0',
-            'base_user_seats'  => 'sometimes|required|integer|min:1',
-            'addon_seat_price' => 'sometimes|required|numeric|min:0',
-            'modules'          => 'sometimes|required|array',
-            'database_type'    => 'nullable|string|in:shared,dedicated',
-            'status'           => 'nullable|string|in:active,inactive',
-        ]);
-
-        if (isset($data['name'])) {
+        if (isset($data['name']) && empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
 

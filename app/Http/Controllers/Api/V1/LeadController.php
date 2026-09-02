@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\LeadAssignRequest;
+use App\Http\Requests\LeadImportCsvRequest;
 use App\Http\Requests\LeadRequest;
 use App\Http\Resources\LeadResource;
 use App\Models\Lead;
@@ -72,22 +74,15 @@ class LeadController extends BaseApiController
         return $this->successResponse(new LeadResource($lead), 'Lead updated successfully');
     }
 
-    public function assign(Request $request, int|string $id): JsonResponse
+    public function assign(LeadAssignRequest $request, int|string $id): JsonResponse
     {
-        $request->validate([
-            'assigned_to' => 'required|exists:users,id',
-        ]);
-
-        $lead = $this->service->update($id, ['assigned_to' => $request->input('assigned_to')]);
+        $data = $request->validated();
+        $lead = $this->service->update($id, ['assigned_to' => $data['assigned_to']]);
         return $this->successResponse(new LeadResource($lead), 'Lead assigned successfully');
     }
 
-    public function importCsv(Request $request): JsonResponse
+    public function importCsv(LeadImportCsvRequest $request): JsonResponse
     {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:10240',
-        ]);
-
         $file = $request->file('file');
         $handle = fopen($file->getRealPath(), 'r');
         $header = fgetcsv($handle);

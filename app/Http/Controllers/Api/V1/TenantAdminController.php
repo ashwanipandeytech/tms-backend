@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\DTOs\OnboardTenantDTO;
 use App\Http\Controllers\BaseApiController;
-use App\Models\Company;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\SubscriptionPlan;
-use App\Models\User;
+use App\Http\Requests\OnboardTenantRequest;
+use App\Http\Requests\ResetTenantDataRequest;
+use App\Http\Requests\UpdateAddonSeatsRequest;
+use App\Services\TenantAdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class TenantAdminController extends BaseApiController
 {
+    protected TenantAdminService $service;
+
+    public function __construct(TenantAdminService $service)
+    {
+        $this->service = $service;
+    }
+
     /**
-     * List all Subscriber Companies.
+     * List all Subscriber Companies (Alias for companies method).
      */
     public function index(Request $request): JsonResponse
     {
@@ -31,57 +35,8 @@ class TenantAdminController extends BaseApiController
      */
     public function companies(Request $request): JsonResponse
     {
-        $paginated = Company::with(['subscriptionPlan', 'users.role'])
-            ->latest()
-            ->paginate((int) $request->input('per_page', 15));
-
-        $paginated->getCollection()->transform(function ($company) {
-            // Exclude Super Admin (role_id 1) from tenant employee listings
-            $tenantUsers = $company->users->filter(fn($user) => (int) $user->role_id !== 1);
-            $users = $tenantUsers->map(function ($user) {
-                $defaultPassword = match ($user->role?->name) {
-                    'Manager'         => 'Manager@123',
-                    'Sales Executive' => 'Sales@123',
-                    'Operation Team'  => 'Ops@123',
-                    'Accounts'        => 'Accounts@123',
-                    default           => 'Password@123',
-                };
-
-                return [
-                    'id'            => $user->id,
-                    'name'          => $user->name,
-                    'email'         => $user->email,
-                    'status'        => $user->status?->value ?? $user->status,
-                    'role_name'     => $user->role?->name ?? 'Staff',
-                    'demo_password' => $defaultPassword,
-                ];
-            })->values();
-
-            $createdAt = $company->created_at ?? now();
-            $startsAt = $company->subscription_starts_at ?? $createdAt;
-            $endsAt = $company->subscription_ends_at ?? $startsAt->copy()->addMonth();
-
-            $daysRemaining = max(0, (int) now()->diffInDays($endsAt, false));
-
-            return [
-                'id'                  => $company->id,
-                'company_name'        => $company->name,
-                'subdomain'           => $company->subdomain,
-                'status'              => $company->subscription_status?->value ?? $company->subscription_status ?? 'active',
-                'created_at'          => $createdAt->toIso8601String(),
-                'subscription'        => [
-                    'plan_name'        => $company->subscriptionPlan?->name ?? 'N/A',
-                    'status'           => $company->subscription_status?->value ?? $company->subscription_status ?? 'active',
-                    'starts_at'        => $startsAt->toIso8601String(),
-                    'ends_at'          => $endsAt->toIso8601String(),
-                    'days_remaining'   => $daysRemaining,
-                    'is_expiring_soon' => $daysRemaining <= 7,
-                ],
-                'total_employees'     => $tenantUsers->count(),
-                'total_allowed_seats' => $company->total_allowed_seats,
-                'employees'           => $users,
-            ];
-        });
+        $perPage = (int) $request->input('per_page', 15);
+        $paginated = $this->service->getPaginatedCompanies($perPage);
 
         return $this->paginatedResponse($paginated, 'Company subscribers and statistics retrieved successfully');
     }
@@ -89,109 +44,29 @@ class TenantAdminController extends BaseApiController
     /**
      * Setup & Onboard a New Company Subscriber Account (Super Admin action).
      */
-    public function store(Request $request): JsonResponse
+    public function store(OnboardTenantRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'company_name'     => 'required|string|max:150',
-            'subdomain'        => 'nullable|string|max:100|unique:companies,subdomain',
-            'plan_id'          => 'required|exists:subscription_plans,id',
-            'billing_cycle'    => 'nullable|string|in:monthly,yearly',
-            'addon_user_seats' => 'nullable|integer|min:0',
-            'database_type'    => 'nullable|string|in:shared,dedicated',
-            'admin_name'       => 'required|string|max:100',
-            'admin_email'      => 'required|email|max:150',
-            'admin_phone'      => 'nullable|string|max:20',
-            'initial_password' => 'required|string|min:6',
-        ]);
+        $dto = OnboardTenantDTO::fromRequest($request);
+        $result = $this->service->onboardTenant($dto);
 
-        $plan = SubscriptionPlan::findOrFail($data['plan_id']);
-
-        return DB::transaction(function () use ($data, $plan) {
-            $subdomain = !empty($data['subdomain'])
-                ? Str::slug($data['subdomain'])
-                : Str::slug($data['company_name']);
-
-            $billingCycle = $data['billing_cycle'] ?? 'monthly';
-            $startsAt = now();
-            $endsAt = $billingCycle === 'yearly' ? now()->addYear() : now()->addMonth();
-
-            // 1. Create Company Subscriber
-            $company = Company::create([
-                'name'                   => $data['company_name'],
-                'subdomain'              => $subdomain,
-                'plan_id'                => $plan->id,
-                'addon_user_seats'       => $data['addon_user_seats'] ?? 0,
-                'subscription_status'    => 'active',
-                'billing_cycle'          => $billingCycle,
-                'subscription_starts_at' => $startsAt,
-                'subscription_ends_at'   => $endsAt,
-                'database_type'          => $data['database_type'] ?? $plan->database_type?->value ?? 'shared',
-            ]);
-
-            // 2. Assign Primary Tenant Admin Account to Universal Global Manager Role
-            $managerRole = Role::where('name', 'Manager')->first()
-                ?? Role::where('name', 'Super Admin')->first();
-
-            if (!$managerRole) {
-                $managerRole = Role::create([
-                    'company_id'  => null,
-                    'name'        => 'Manager',
-                    'description' => 'Manage company leads, packages, bookings',
-                ]);
-            }
-
-            // 3. Create Primary Tenant Admin Account
-            $adminUser = User::create([
-                'company_id'      => $company->id,
-                'role_id'         => $managerRole->id,
-                'name'            => $data['admin_name'],
-                'email'           => $data['admin_email'],
-                'phone'           => $data['admin_phone'] ?? null,
-                'password'        => Hash::make($data['initial_password']),
-                'status'          => 'active',
-                'created_by'      => auth()->id() ?? null,
-                'created_by_type' => auth()->user()?->isSuperAdmin() ? 'super_admin' : 'tenant_admin',
-            ]);
-
-            return $this->createdResponse([
-                'company'             => $company->load('subscriptionPlan'),
-                'total_allowed_seats' => $company->total_allowed_seats,
-                'tenant_admin'        => [
-                    'id'    => $adminUser->id,
-                    'name'  => $adminUser->name,
-                    'email' => $adminUser->email,
-                ],
-            ], 'Company subscription account set up successfully');
-        });
+        return $this->createdResponse($result, 'Company subscription account set up successfully');
     }
 
     /**
      * Update Company Add-on User Seats.
      */
-    public function updateAddonSeats(Request $request, int|string $id): JsonResponse
+    public function updateAddonSeats(UpdateAddonSeatsRequest $request, int|string $id): JsonResponse
     {
-        $request->validate([
-            'addon_user_seats' => 'required|integer|min:0',
-        ]);
+        $addonSeats = (int) $request->input('addon_user_seats');
+        $result = $this->service->updateAddonSeats((int) $id, $addonSeats);
 
-        $company = Company::findOrFail($id);
-        $company->update([
-            'addon_user_seats' => (int) $request->input('addon_user_seats'),
-        ]);
-
-        return $this->successResponse([
-            'company_id'          => $company->id,
-            'company_name'        => $company->name,
-            'base_user_seats'     => $company->subscriptionPlan?->base_user_seats ?? 5,
-            'addon_user_seats'    => $company->addon_user_seats,
-            'total_allowed_seats' => $company->total_allowed_seats,
-        ], 'Add-on user seats updated successfully');
+        return $this->successResponse($result, 'Add-on user seats updated successfully');
     }
 
     /**
      * Bulk Reset/Clear Tenant Data (supports clear_all: true or specific id / tenant_id payload).
      */
-    public function resetTenantData(Request $request): JsonResponse
+    public function resetTenantData(ResetTenantDataRequest $request): JsonResponse
     {
         $currentUser = $request->user();
 
@@ -214,57 +89,12 @@ class TenantAdminController extends BaseApiController
             }
         }
 
-        return DB::transaction(function () use ($currentUser, $clearAll, $targetCompanyId) {
-            // Delete staff users except current user and Super Admin (role_id 1)
-            $usersQuery = User::query();
-            if (!$clearAll && $targetCompanyId) {
-                $usersQuery->where('company_id', $targetCompanyId);
-            }
-            $usersQuery->where('id', '!=', $currentUser->id)
-                ->where('role_id', '!=', 1)
-                ->delete();
+        $result = $this->service->resetTenantData($currentUser, $clearAll, $targetCompanyId);
 
-            // Note: Roles and Permissions are globally managed and strictly preserved on reset.
+        $msg = $clearAll
+            ? 'All tenant data reset successfully across all companies. Primary Super Admin account preserved.'
+            : ($targetCompanyId ? "Tenant data for company ID {$targetCompanyId} reset successfully." : 'Tenant data reset successfully.');
 
-            // Clear tenant resource tables
-            $tables = [
-                \App\Models\Lead::class,
-                \App\Models\FollowUp::class,
-                \App\Models\Booking::class,
-                \App\Models\Quotation::class,
-                \App\Models\Package::class,
-                \App\Models\Hotel::class,
-                \App\Models\Resort::class,
-                \App\Models\Villa::class,
-                \App\Models\Vendor::class,
-                \App\Models\Vehicle::class,
-                \App\Models\CabBooking::class,
-                \App\Models\Invoice::class,
-                \App\Models\Payment::class,
-                \App\Models\Expense::class,
-                \App\Models\Customer::class,
-            ];
-
-            foreach ($tables as $modelClass) {
-                if (class_exists($modelClass)) {
-                    $q = $modelClass::query();
-                    if (!$clearAll && $targetCompanyId) {
-                        $q->where('company_id', $targetCompanyId);
-                    }
-                    $q->delete();
-                }
-            }
-
-            $msg = $clearAll
-                ? 'All tenant data reset successfully across all companies. Primary Super Admin account preserved.'
-                : ($targetCompanyId ? "Tenant data for company ID {$targetCompanyId} reset successfully." : 'Tenant data reset successfully.');
-
-            return $this->successResponse([
-                'clear_all'       => $clearAll,
-                'company_id'      => $targetCompanyId,
-                'preserved_admin' => $currentUser->email,
-                'status'          => 'reset_completed',
-            ], $msg);
-        });
+        return $this->successResponse($result, $msg);
     }
 }

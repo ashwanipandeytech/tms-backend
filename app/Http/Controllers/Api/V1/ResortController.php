@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\ResortStoreRequest;
 use App\Services\ResortService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,9 +25,9 @@ class ResortController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Resorts retrieved');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(ResortStoreRequest $request): JsonResponse
     {
-        $resort = $this->service->create($request->validate(['name' => 'required|string|max:150', 'location' => 'nullable|string', 'facilities' => 'nullable|string', 'status' => 'nullable|string']));
+        $resort = $this->service->create($request->validated());
         return $this->createdResponse($resort, 'Resort created');
     }
 
@@ -35,9 +36,9 @@ class ResortController extends BaseApiController
         return $this->successResponse($this->service->getById($id, ['rooms', 'images']), 'Resort details');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(ResortStoreRequest $request, int|string $id): JsonResponse
     {
-        return $this->successResponse($this->service->update($id, $request->all()), 'Resort updated');
+        return $this->successResponse($this->service->update($id, $request->validated()), 'Resort updated');
     }
 
     public function destroy(int|string $id): JsonResponse

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\VillaStoreRequest;
 use App\Services\VillaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,9 +25,9 @@ class VillaController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Villas retrieved');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(VillaStoreRequest $request): JsonResponse
     {
-        $villa = $this->service->create($request->validate(['name' => 'required|string|max:150', 'price' => 'required|numeric|min:0', 'location' => 'nullable|string', 'capacity' => 'nullable|integer', 'bedrooms' => 'nullable|integer', 'amenities' => 'nullable|string']));
+        $villa = $this->service->create($request->validated());
         return $this->createdResponse($villa, 'Villa created');
     }
 
@@ -35,9 +36,9 @@ class VillaController extends BaseApiController
         return $this->successResponse($this->service->getById($id, ['images']), 'Villa details');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(VillaStoreRequest $request, int|string $id): JsonResponse
     {
-        return $this->successResponse($this->service->update($id, $request->all()), 'Villa updated');
+        return $this->successResponse($this->service->update($id, $request->validated()), 'Villa updated');
     }
 
     public function destroy(int|string $id): JsonResponse

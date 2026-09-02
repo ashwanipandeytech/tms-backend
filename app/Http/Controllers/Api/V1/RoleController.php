@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\RoleStoreRequest;
+use App\Http\Requests\RoleUpdateRequest;
 use App\Models\Role;
 use App\Services\RoleService;
 use Illuminate\Http\JsonResponse;
@@ -33,18 +35,9 @@ class RoleController extends BaseApiController
         return $this->paginatedResponse($roles, 'Roles retrieved successfully');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(RoleStoreRequest $request): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
-            return $this->errorResponse('Only Super Admin can create or manage universal roles.', 403, [], 'FORBIDDEN');
-        }
-
-        $data = $request->validate([
-            'name'          => 'required|string|max:50',
-            'description'   => 'nullable|string|max:255',
-            'permissions'   => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
+        $data = $request->validated();
 
         if ($matchedExisting = $this->checkDuplicateRoleName($data['name'])) {
             return $this->errorResponse(
@@ -74,20 +67,10 @@ class RoleController extends BaseApiController
         return $this->successResponse($role, 'Role details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(RoleUpdateRequest $request, int|string $id): JsonResponse
     {
-        if (!$request->user() || !$request->user()->isSuperAdmin()) {
-            return $this->errorResponse('Only Super Admin can edit or update universal roles.', 403, [], 'FORBIDDEN');
-        }
-
         $role = Role::findOrFail($id);
-
-        $data = $request->validate([
-            'name'          => 'sometimes|required|string|max:50',
-            'description'   => 'nullable|string|max:255',
-            'permissions'   => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
+        $data = $request->validated();
 
         if (!empty($data['name']) && ($matchedExisting = $this->checkDuplicateRoleName($data['name'], (int) $id))) {
             return $this->errorResponse(

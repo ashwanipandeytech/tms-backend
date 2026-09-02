@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\InvoiceStoreRequest;
 use App\Services\InvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,9 +24,10 @@ class InvoiceController extends BaseApiController
         return $this->paginatedResponse($this->service->getPaginated((int) $request->input('per_page', 15), ['booking'], $request->only(['search', 'status'])), 'Invoices retrieved');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(InvoiceStoreRequest $request): JsonResponse
     {
-        return $this->createdResponse($this->service->create($request->validate(['booking_id' => 'nullable|exists:bookings,id', 'amount' => 'nullable|numeric', 'gst_amount' => 'nullable|numeric', 'status' => 'nullable|string'])), 'Invoice created');
+        $data = $request->validated();
+        return $this->createdResponse($this->service->create($data), 'Invoice created');
     }
 
     public function show(int|string $id): JsonResponse
@@ -33,9 +35,10 @@ class InvoiceController extends BaseApiController
         return $this->successResponse($this->service->getById($id, ['booking']), 'Invoice details');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(InvoiceStoreRequest $request, int|string $id): JsonResponse
     {
-        return $this->successResponse($this->service->update($id, $request->all()), 'Invoice updated');
+        $data = $request->validated();
+        return $this->successResponse($this->service->update($id, $data), 'Invoice updated');
     }
 
     public function destroy(int|string $id): JsonResponse

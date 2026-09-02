@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\BookingAssignOperationsRequest;
 use App\Http\Requests\BookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Services\BookingService;
@@ -70,13 +71,10 @@ class BookingController extends BaseApiController
         return $this->successResponse(new BookingResource($booking), 'Booking updated successfully');
     }
 
-    public function assignOperations(Request $request, int|string $id): JsonResponse
+    public function assignOperations(BookingAssignOperationsRequest $request, int|string $id): JsonResponse
     {
-        $request->validate([
-            'operations_id' => 'required|exists:users,id',
-        ]);
-
-        $booking = $this->service->update($id, ['operations_id' => $request->input('operations_id')]);
+        $data = $request->validated();
+        $booking = $this->service->update($id, ['operations_id' => $data['operations_id']]);
         return $this->successResponse(new BookingResource($booking), 'Operations fulfillment assigned successfully');
     }
 

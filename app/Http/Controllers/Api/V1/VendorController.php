@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\VendorStoreRequest;
 use App\Services\VendorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,9 +24,10 @@ class VendorController extends BaseApiController
         return $this->paginatedResponse($this->service->getPaginated((int) $request->input('per_page', 15), [], $request->only(['search'])), 'Vendors retrieved');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(VendorStoreRequest $request): JsonResponse
     {
-        return $this->createdResponse($this->service->create($request->validate(['name' => 'required|string|max:120', 'type' => 'nullable|string', 'contact' => 'nullable|string', 'email' => 'nullable|email'])), 'Vendor created');
+        $data = $request->validated();
+        return $this->createdResponse($this->service->create($data), 'Vendor created');
     }
 
     public function show(int|string $id): JsonResponse
@@ -33,9 +35,10 @@ class VendorController extends BaseApiController
         return $this->successResponse($this->service->getById($id, ['vehicles']), 'Vendor details');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(VendorStoreRequest $request, int|string $id): JsonResponse
     {
-        return $this->successResponse($this->service->update($id, $request->all()), 'Vendor updated');
+        $data = $request->validated();
+        return $this->successResponse($this->service->update($id, $data), 'Vendor updated');
     }
 
     public function destroy(int|string $id): JsonResponse

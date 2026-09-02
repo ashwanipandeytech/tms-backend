@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\HotelStoreRequest;
+use App\Http\Requests\HotelUpdateRequest;
 use App\Services\HotelService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,18 +30,9 @@ class HotelController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Hotels retrieved successfully');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(HotelStoreRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'name'          => 'required|string|max:150',
-            'location'      => 'nullable|string|max:150',
-            'star_category' => 'nullable|integer|min:1|max:5',
-            'contact_name'  => 'nullable|string',
-            'contact_phone' => 'nullable|string',
-            'contact_email' => 'nullable|email',
-            'rating'        => 'nullable|numeric|min:0|max:5',
-            'status'        => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $hotel = $this->service->create($data);
         return $this->createdResponse($hotel, 'Hotel created successfully');
     }
@@ -50,18 +43,9 @@ class HotelController extends BaseApiController
         return $this->successResponse($hotel, 'Hotel details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(HotelUpdateRequest $request, int|string $id): JsonResponse
     {
-        $data = $request->validate([
-            'name'          => 'sometimes|required|string|max:150',
-            'location'      => 'nullable|string|max:150',
-            'star_category' => 'nullable|integer|min:1|max:5',
-            'contact_name'  => 'nullable|string',
-            'contact_phone' => 'nullable|string',
-            'contact_email' => 'nullable|email',
-            'rating'        => 'nullable|numeric|min:0|max:5',
-            'status'        => 'nullable|string',
-        ]);
+        $data = $request->validated();
         $hotel = $this->service->update($id, $data);
         return $this->successResponse($hotel, 'Hotel updated successfully');
     }

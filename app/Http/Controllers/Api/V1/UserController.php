@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\BaseApiController;
+use App\Http\Requests\UserStoreRequest;
+use App\Http\Requests\UserUpdateRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\UserService;
@@ -49,7 +51,7 @@ class UserController extends BaseApiController
         return $this->paginatedResponse($paginator, 'Users retrieved successfully', UserResource::class);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(UserStoreRequest $request): JsonResponse
     {
         $currentUser = $request->user();
 
@@ -69,14 +71,7 @@ class UserController extends BaseApiController
             }
         }
 
-        $data = $request->validate([
-            'name'                  => 'required|string|max:100',
-            'email'                 => 'required|email|max:150|unique:users,email',
-            'phone'                 => 'nullable|string|max:20',
-            'role_id'               => 'required|exists:roles,id',
-            'password'              => 'required|string|min:6|confirmed',
-            'status'                => 'nullable|string|in:active,inactive',
-        ]);
+        $data = $request->validated();
 
         $rawPassword = $data['password'];
         $data['password'] = Hash::make($data['password']);
@@ -96,16 +91,9 @@ class UserController extends BaseApiController
         return $this->successResponse(new UserResource($user), 'User details retrieved');
     }
 
-    public function update(Request $request, int|string $id): JsonResponse
+    public function update(UserUpdateRequest $request, int|string $id): JsonResponse
     {
-        $data = $request->validate([
-            'name'                  => 'sometimes|required|string|max:100',
-            'email'                 => 'sometimes|required|email|max:150|unique:users,email,' . $id,
-            'phone'                 => 'nullable|string|max:20',
-            'role_id'               => 'sometimes|required|exists:roles,id',
-            'password'              => 'nullable|string|min:6|confirmed',
-            'status'                => 'nullable|string|in:active,inactive',
-        ]);
+        $data = $request->validated();
 
         if (!empty($data['password'])) {
             $rawPassword = $data['password'];
