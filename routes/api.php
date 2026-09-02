@@ -43,6 +43,8 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('webhooks')->group(function () {
         Route::post('leads/meta', [LeadWebhookController::class, 'handleMetaWebhook']);
+        Route::post('leads/google', [LeadWebhookController::class, 'handleGoogleWebhook']);
+        Route::post('leads/whatsapp', [LeadWebhookController::class, 'handleWhatsappWebhook']);
         Route::post('leads/website', [LeadWebhookController::class, 'handleWebsiteWebhook']);
     });
 

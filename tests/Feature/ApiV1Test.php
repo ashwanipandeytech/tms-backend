@@ -269,6 +269,25 @@ class ApiV1Test extends TestCase
             'campaign_source' => 'Website Popup',
         ]);
         $webResponse->assertStatus(201)->assertJsonPath('data.name', 'Website Form Lead');
+
+        // Google Webhook
+        $googleResponse = $this->postJson('/api/v1/webhooks/leads/google', [
+            'full_name'       => 'Google Ads User',
+            'phone'           => '9123456799',
+            'email'           => 'google.lead@example.com',
+            'destination'     => 'Ladakh',
+            'campaign_source' => 'Google Search Ads',
+        ]);
+        $googleResponse->assertStatus(201)->assertJsonPath('data.name', 'Google Ads User');
+
+        // WhatsApp Webhook
+        $waResponse = $this->postJson('/api/v1/webhooks/leads/whatsapp', [
+            'name'        => 'WhatsApp Inquirer',
+            'phone'       => '9123456888',
+            'message'     => 'Interested in Kashmir package for 4 adults',
+            'destination' => 'Kashmir',
+        ]);
+        $waResponse->assertStatus(201)->assertJsonPath('data.name', 'WhatsApp Inquirer');
     }
 
     public function test_get_customers_and_users_list(): void
