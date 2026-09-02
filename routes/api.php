@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CabBookingController;
+use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\ExpenseController;
@@ -37,6 +38,9 @@ Route::prefix('v1')->group(function () {
     Route::get('plans', [SubscriptionPlanController::class, 'index']);
     Route::post('admin/tenants', [TenantAdminController::class, 'store']); // Public & Super Admin Tenant Onboarding
 
+    // Public Config Endpoints
+    Route::get('config/statuses', [ConfigController::class, 'statuses']);
+
     Route::prefix('webhooks')->group(function () {
         Route::post('leads/meta', [LeadWebhookController::class, 'handleMetaWebhook']);
         Route::post('leads/website', [LeadWebhookController::class, 'handleWebsiteWebhook']);
@@ -64,6 +68,8 @@ Route::prefix('v1')->group(function () {
 
         // Core Lead & Booking Endpoints
         Route::put('leads/{lead}/assign', [LeadController::class, 'assign']);
+        Route::get('leads/sample-csv', [LeadController::class, 'downloadSampleCsv']);
+        Route::get('leads/export-csv', [LeadController::class, 'exportCsv']);
         Route::post('leads/import', [LeadController::class, 'importCsv']);
         Route::put('bookings/{booking}/assign-operations', [BookingController::class, 'assignOperations']);
 

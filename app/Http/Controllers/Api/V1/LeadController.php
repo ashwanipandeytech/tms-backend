@@ -125,6 +125,66 @@ class LeadController extends BaseApiController
         ], "CSV Import completed: {$importedCount} leads imported, {$skippedCount} duplicate leads skipped");
     }
 
+    /**
+     * Download Sample CSV Template for Lead Upload.
+     */
+    public function downloadSampleCsv(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="leads_sample_template.csv"',
+        ];
+
+        return response()->stream(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Name', 'Phone', 'Email', 'Destination', 'Budget', 'Notes']);
+            fputcsv($handle, ['Rahul Sharma', '9876543210', 'rahul@example.com', 'Kashmir', '50000', 'Honeymoon trip']);
+            fputcsv($handle, ['Priya Verma', '9876543211', 'priya@example.com', 'Goa', '30000', 'Family vacation']);
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Export Leads to CSV.
+     */
+    public function exportCsv(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="leads_export_' . date('Y-m-d') . '.csv"',
+        ];
+
+        $filters = $request->only(['search', 'status']);
+        $user = $request->user();
+        if ($user && $user->role && str_contains(strtolower($user->role->name), 'sales')) {
+            $filters['assigned_to'] = $user->id;
+        }
+
+        $leads = Lead::with(['source', 'assignedUser'])->where($filters)->get();
+
+        return response()->stream(function () use ($leads) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['ID', 'Name', 'Phone', 'Email', 'Destination', 'Status', 'Budget', 'Assigned To', 'Source', 'Created At']);
+
+            foreach ($leads as $lead) {
+                fputcsv($handle, [
+                    $lead->id,
+                    $lead->name,
+                    $lead->phone,
+                    $lead->email ?? '',
+                    $lead->destination ?? '',
+                    $lead->status?->value ?? $lead->status ?? 'new',
+                    $lead->budget ?? 0,
+                    $lead->assignedUser?->name ?? 'Unassigned',
+                    $lead->source?->name ?? 'Direct',
+                    $lead->created_at?->toDateTimeString() ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, 200, $headers);
+    }
+
     public function destroy(int|string $id): JsonResponse
     {
         $this->service->delete($id);

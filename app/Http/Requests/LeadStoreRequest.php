@@ -19,7 +19,7 @@ class LeadStoreRequest extends BaseRequest
             'pax_adults'      => 'nullable|integer|min:0',
             'pax_children'    => 'nullable|integer|min:0',
             'budget'          => 'nullable|numeric|min:0',
-            'status'          => 'nullable|string|in:new,contacted,followup,interested,quotation_sent,negotiation,confirmed,lost',
+            'status'          => 'nullable|string',
             'assigned_to'     => 'nullable|exists:users,id',
             'notes'           => 'nullable|string',
         ];

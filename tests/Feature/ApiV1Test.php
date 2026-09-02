@@ -42,6 +42,17 @@ class ApiV1Test extends TestCase
                  ->assertJsonStructure(['data' => ['user', 'token']]);
     }
 
+    public function test_system_status_config_endpoint(): void
+    {
+        $response = $this->getJson('/api/v1/config/statuses');
+        $response->assertStatus(200)
+                 ->assertJson(['success' => true])
+                 ->assertJsonStructure([
+                     'data' => ['leads', 'bookings', 'invoices', 'followups', 'vehicles', 'quotations', 'customers']
+                 ])
+                 ->assertJsonFragment(['key' => 'NEW_LEAD', 'label' => 'New Lead']);
+    }
+
     public function test_super_admin_subscription_plans_and_tenant_onboarding(): void
     {
         $admin = User::where('email', 'travel@demohandler.in')->first();
